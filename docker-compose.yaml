@@ -1,0 +1,21 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile-dev
+    command: "go run ./cmd/api -port 4000 -env development"
+    ports:
+      - "4000:4000"
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./internal
+          target: /app/internal
+        - action: sync+restart
+          path: ./cmd
+          target: /app/cmd
+          #ignore:
+        - action: rebuild
+          path: go.mod
+        - action: rebuild
+          path: go.sum

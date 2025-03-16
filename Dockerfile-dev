@@ -1,0 +1,12 @@
+FROM golang:latest AS builder
+
+RUN useradd -ms /bin/bash -u 1001 app
+USER app
+
+WORKDIR /app
+COPY go.mod go.sum .
+RUN go mod download
+
+COPY --chown=app:app cmd /app/cmd
+COPY --chown=app:app internal /app/internal
+COPY --chown=app:app migrations /app/migrations
