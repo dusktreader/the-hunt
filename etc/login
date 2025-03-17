@@ -1,0 +1,10 @@
+#!/usr/bin/bash
+
+# Starts a REPL for the database.
+
+set -euxo pipefail
+
+docker compose run \
+    --rm \
+    db \
+    psql 'postgres://compose-db-user:compose-db-pswd@db:5432/compose-db-name?sslmode=disable'

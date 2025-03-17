@@ -6,11 +6,25 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/dusktreader/the-hunt/internal/data"
 	"github.com/julienschmidt/httprouter"
 )
+
+func MaybeDie(err error) {
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "There was an error:", err)
+		os.Exit(1)
+	}
+}
+
+func Die(msg string, flags ...interface{}) {
+	msg = fmt.Sprintf(msg, flags...)
+	fmt.Fprintln(os.Stderr, "Aborting:", msg)
+	os.Exit(1)
+}
 
 func (app *application) logError(r *http.Request, er *data.ErrorPackage) {
 	var logMessage string
@@ -103,7 +117,7 @@ func (app *application) writeJSON(w http.ResponseWriter, jr *data.JSONResponse) 
 
 	var serialized []byte
 	var err error
-	if app.config.env == "development" {
+	if app.config.APIEnv == "development" {
 		serialized, err = json.MarshalIndent(env, "", "  ")
 	} else {
 		serialized, err = json.Marshal(env)

@@ -1,0 +1,14 @@
+#!/usr/bin/bash
+
+# Creates a new migration file in the migrations directory.
+# Specify the name of the migration as the only argument.
+
+set -euxo pipefail
+
+docker compose run \
+    --rm \
+    --no-deps \
+    --volume=/etc/passwd:/etc/passwd:ro \
+    --volume=/etc/group:/etc/group:ro \
+    --user="$(id -u):$(id -g)" \
+    migrate goose create -s $1 sql

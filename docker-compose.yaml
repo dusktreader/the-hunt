@@ -3,9 +3,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile-dev
-    command: "go run ./cmd/api -port 4000 -env development"
+    command: "go run ./cmd/api"
     ports:
       - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     develop:
       watch:
         - action: sync+restart
@@ -19,3 +24,36 @@ services:
           path: go.mod
         - action: rebuild
           path: go.sum
+
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: compose-db-name
+      POSTGRES_USER: compose-db-user
+      POSTGRES_PASSWORD: compose-db-pswd
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./etc/postgres/extensions.sql:/docker-entrypoint-initdb.d/extensions.sql
+      - pg_data:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U compose-db-user -d compose-db-name"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: gomicro/goose
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    environment:
+      GOOSE_DRIVER: postgres
+      GOOSE_DBSTRING: "postgres://compose-db-user:compose-db-pswd@db:5432/compose-db-name?sslmode=disable"
+      GOOSE_MIGRATION_DIR: /migrations
+    command: ["goose", "up"]
+
+volumes:
+  pg_data:

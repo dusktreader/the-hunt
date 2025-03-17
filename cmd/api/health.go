@@ -20,7 +20,7 @@ func (app *application) healthHandler(w http.ResponseWriter, r *http.Request) {
 		EnvelopeKey:	"health",
 		Data:			&healthResponse{
 							Status:			"available",
-							Environment: 	app.config.env,
+							Environment: 	app.config.APIEnv,
 							Version:		version,
 						},
 	}

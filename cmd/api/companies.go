@@ -21,6 +21,8 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 		TechStack	[]string	`json:"tech_stack"`
 	}
 
+	app.logger.Debug("Creating a new company", "input", input)
+
 	err := app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
@@ -30,12 +32,12 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 	v := validator.New()
 
 	c := &data.Company{
-		ID:			13,
-		CreatedAt:	time.Now(),
 		Name:		input.Name,
 		URL:		input.URL,
 		TechStack:	input.TechStack,
 	}
+
+	app.logger.Debug("Validating new company")
 
 	c.Validate(v)
 	if !v.Valid() {
@@ -43,7 +45,37 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	fmt.Fprintf(w, "%+v\n", input)
+	app.logger.Debug("Inserting new company into database")
+
+	err = app.models.Company.Insert(c)
+	if err != nil {
+		app.errorResponse(w, r, &data.ErrorPackage{
+			StatusCode:	http.StatusInternalServerError,
+			Message:	"Couldn't add company",
+			Error:		err,
+		})
+		return
+	}
+
+	app.logger.Debug("Serializing response")
+
+	headers := make(http.Header)
+	headers.Set("Location", fmt.Sprintf("/v1/companies/%d", c.ID))
+
+	err = app.writeJSON(w, &data.JSONResponse{
+		Data: 			c,
+		StatusCode:		http.StatusCreated,
+		Headers:		headers,
+		EnvelopeKey:	"company",
+	})
+	if err != nil {
+		app.errorResponse(w, r, &data.ErrorPackage{
+			StatusCode:	http.StatusInternalServerError,
+			Message:	"Failed to serialize company data",
+			Error:		err,
+		})
+		return
+	}
 }
 
 func (app *application) showCompanyHandler(w http.ResponseWriter, r *http.Request) {
