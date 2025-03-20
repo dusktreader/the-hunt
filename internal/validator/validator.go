@@ -35,8 +35,10 @@ func (v *Validator) AddError(key string, message string) {
 	}
 }
 
-func (v *Validator) Errors() map[string]any {
-	errors := make(map[string]any)
+type ValidationErrors map[string]any
+
+func (v *Validator) Errors() ValidationErrors {
+	errors := make(ValidationErrors)
 	for key, value := range v.errors {
 		if len(value) == 1 {
 			errors[key] = value[0]

@@ -38,7 +38,7 @@ func main() {
 	if cfg.APIEnv == "development" {
 		logOpts.Level = slog.LevelDebug
 	}
-	logger := slog.New(slog.NewTextHandler(os.Stdout, logOpts))
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, logOpts))
 
 	dsn := buildDSN(cfg)
 	logger.Info("Attempting to connect to the database", "dsn", dsn)
@@ -50,7 +50,7 @@ func main() {
 	app := &application{
 		config: cfg,
 		logger: logger,
-		models: data.NewModels(db),
+		models: data.NewModels(db, data.NewModelConfig(cfg)),
 	}
 
 	srv := &http.Server{

@@ -19,7 +19,6 @@ services:
         - action: sync+restart
           path: ./cmd
           target: /app/cmd
-          #ignore:
         - action: rebuild
           path: go.mod
         - action: rebuild

@@ -6,7 +6,8 @@ create table companies (
   updated_at timestamp(0) not null default now(),
   name       text         unique not null,
   url        text         not null default '',
-  tech_stack text[]       not null
+  tech_stack text[]       not null,
+  version    bigint       not null default 0
 );
 -- +goose StatementEnd
 

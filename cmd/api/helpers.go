@@ -6,10 +6,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"regexp"
+	"slices"
 	"strconv"
+	"strings"
 
 	"github.com/dusktreader/the-hunt/internal/data"
+	"github.com/dusktreader/the-hunt/internal/validator"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -42,69 +47,145 @@ func (app *application) logError(r *http.Request, er *data.ErrorPackage) {
 
 }
 
-func (app *application) parseIdParam(r *http.Request) (uint64, error) {
+func (app *application) parseIdParam(r *http.Request) (int64, error) {
 	params := httprouter.ParamsFromContext(r.Context())
-	id, err := strconv.ParseUint(params.ByName("id"), 10, 64)
+	id, err := strconv.ParseInt(params.ByName("id"), 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("UInt is required")
+		return 0, fmt.Errorf("Int is required")
+	} else if id < 0 {
+		return 0, fmt.Errorf("Negative ids are not allowed")
 	} else if id == 0 {
 		return 0, fmt.Errorf("0 is not allowed")
 	}
 	return id, nil
 }
 
-func (app *application) errorResponse(
-	w http.ResponseWriter,
-	r *http.Request,
-	ep *data.ErrorPackage,
-) {
-	app.logError(r, ep)
-	err := app.writeJSON(w, &data.JSONResponse{
-		Data:			ep,
-		StatusCode:		ep.StatusCode,
-		EnvelopeKey:	"error",
-	})
-	if err != nil {
-		app.logger.Error("Couldn't serialize error response", "error", err)
-		w.WriteHeader(http.StatusInternalServerError)
+func (app *application) readString(
+	qs url.Values,
+	key string,
+	_ *validator.Validator,
+) *string {
+	var p *string
+	s := qs.Get(key)
+	if s != "" {
+		app.logger.Debug("Read string", "key", key, "value", s)
+		p = &s
 	}
+	return p
 }
 
-func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request) {
-	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusNotFound,
-		Message:	"Could not find the route you requested",
-	})
+func (app *application) readCSV(
+	qs url.Values,
+	key string,
+	_ *validator.Validator,
+) []string {
+	s := make([]string, 0)
+	csv := qs.Get(key)
+	if csv != "" {
+		s = strings.Split(csv, ",")
+	}
+	return s
 }
 
-func (app *application) notAllowedResponse(w http.ResponseWriter, r *http.Request) {
-	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusMethodNotAllowed,
-		Message:	"The requested method is not allowed for this resource",
-	})
+func (app *application) readInt(
+	qs url.Values,
+	key string,
+	v *validator.Validator,
+) *int {
+	var p *int
+	s := qs.Get(key)
+	if s != "" {
+		i, err := strconv.Atoi(s)
+		if err != nil {
+			v.AddError("query", "must be an integer")
+		} else {
+			p = &i
+		}
+	}
+	return p
 }
 
-func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
-	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusBadRequest,
-		Message:	"Invalid request payload",
-		Details:	err.Error(),
-		Error:		err,
-	})
+func (app *application) readBool(
+	qs url.Values,
+	key string,
+	v *validator.Validator,
+) *bool {
+	var p *bool
+	s := qs.Get(key)
+	if s != "" {
+		sl := strings.ToLower(s)
+		if slices.Contains([]string{"t", "true", "y", "yes", "1"}, sl) {
+			b := true
+			p = &b
+		} else if slices.Contains([]string{"f", "false", "n", "no", "0"}, sl) {
+			b := false
+			p = &b
+		} else {
+			v.AddError("query", fmt.Sprintf("could not map %q to a boolean value", s))
+		}
+	}
+	return p
 }
 
-func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.Request, errors map[string]any) {
-	errBytes, err := json.Marshal(errors)
-	if err != nil {
-		panic(err)
+func (app *application) ParseFilters(
+	qs url.Values,
+	v *validator.Validator,
+	c data.FilterConstraints,
+) data.Filters {
+	f := data.Filters{
+		Search:		&data.SearchMap{},
+		In:			&data.InMap{},
+		Page:		app.readInt(qs, "page", v),
+		PageSize:	app.readInt(qs, "page_size", v),
+		Sort:		app.readString(qs, "sort", v),
+		SortAsc: 	app.readBool(qs, "sort_asc", v),
 	}
 
-	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusUnprocessableEntity,
-		Message:	"Invalid request payload",
-		Details:	errors,
-		Error:		fmt.Errorf("%s", errBytes),
-	})
+	rex := regexp.MustCompile(`^search_(\w+)$`)
+	for key := range qs {
+		m := rex.FindStringSubmatch(key)
+		if len(m) == 2 {
+			partKey := m[1]
+			partVal := *app.readString(qs, key, v)
+			if len(partVal) < 3 {
+				v.AddError(key, "Search parameters must be at least 3 characters long")
+			} else {
+				(*f.Search)[partKey] = partVal
+				app.logger.Debug("Added search parameter", "key", partKey, "value", partVal)
+			}
+		}
+	}
+
+	rex = regexp.MustCompile(`^in_(\w+)$`)
+	for key := range qs {
+		m := rex.FindStringSubmatch(key)
+		if len(m) == 2 {
+			partKey := m[1]
+			partVal := *app.readString(qs, key, v)
+			(*f.In)[partKey] = partVal
+			app.logger.Debug("Added in parameter", "key", partKey, "value", partVal)
+		}
+	}
+
+	if f.Search != nil && c.Search != nil {
+		v.Check(c.Search(*f.Search), "search", "parameter is invalid")
+	}
+	if f.Sort != nil && c.Sort != nil {
+		v.Check(c.Sort(*f.Sort), "sort", "parameter is invalid")
+	}
+	if f.In != nil && c.In != nil {
+		v.Check(c.In(*f.In), "in", "parameter is invalid")
+	}
+	if f.Page != nil && c.Page != nil {
+		v.Check(c.Page(*f.Page), "page", "parameter is invalid")
+	}
+	if f.PageSize != nil && c.PageSize != nil {
+		v.Check(c.PageSize(*f.PageSize), "page_size", "parameter is invalid")
+	}
+
+	app.logger.Debug("Parsed filters", "filters", f)
+
+	return f
 }
 
 func (app *application) writeJSON(w http.ResponseWriter, jr *data.JSONResponse) error {

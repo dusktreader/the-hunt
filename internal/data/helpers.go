@@ -1,6 +1,8 @@
 package data
 
-import "net/http"
+import (
+	"net/http"
+)
 
 type JSONResponse struct {
 	Data		any
