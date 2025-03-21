@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -38,7 +38,7 @@ func (app *application) logError(r *http.Request, er *data.ErrorPackage) {
 	} else {
 		logMessage = er.LogMessage
 	}
-	app.logger.Error(
+	slog.Error(
 		logMessage,
 		"error", er.Error,
 		"method", r.Method,
@@ -68,7 +68,7 @@ func (app *application) readString(
 	var p *string
 	s := qs.Get(key)
 	if s != "" {
-		app.logger.Debug("Read string", "key", key, "value", s)
+		slog.Debug("Read string", "key", key, "value", s)
 		p = &s
 	}
 	return p
@@ -137,33 +137,39 @@ func (app *application) ParseFilters(
 		In:			&data.InMap{},
 		Page:		app.readInt(qs, "page", v),
 		PageSize:	app.readInt(qs, "page_size", v),
-		Sort:		app.readString(qs, "sort", v),
-		SortAsc: 	app.readBool(qs, "sort_asc", v),
+		Sort:		data.NewSortMap(),
 	}
 
-	rex := regexp.MustCompile(`^search_(\w+)$`)
+	var search data.SearchMatch
+	var in data.InMatch
 	for key := range qs {
-		m := rex.FindStringSubmatch(key)
-		if len(m) == 2 {
-			partKey := m[1]
+		if data.SearchRex.Find(&search, key) {
+			partKey := search.Key
 			partVal := *app.readString(qs, key, v)
 			if len(partVal) < 3 {
 				v.AddError(key, "Search parameters must be at least 3 characters long")
 			} else {
 				(*f.Search)[partKey] = partVal
-				app.logger.Debug("Added search parameter", "key", partKey, "value", partVal)
 			}
+		}
+
+		if data.InRex.Find(&in, key) {
+			partKey := in.Key
+			partVal := *app.readString(qs, key, v)
+			(*f.In)[partKey] = partVal
 		}
 	}
 
-	rex = regexp.MustCompile(`^in_(\w+)$`)
-	for key := range qs {
-		m := rex.FindStringSubmatch(key)
-		if len(m) == 2 {
-			partKey := m[1]
-			partVal := *app.readString(qs, key, v)
-			(*f.In)[partKey] = partVal
-			app.logger.Debug("Added in parameter", "key", partKey, "value", partVal)
+	rawSorts := app.readCSV(qs, "sort", v)
+	var sort data.SortMatch
+	for _, rawSort := range rawSorts {
+		if data.SortRex.Find(&sort, rawSort) {
+			partKey := sort.Key
+			partVal := data.SortAsc
+			if sort.Dir == "-" {
+				partVal = data.SortDesc
+			}
+			f.Sort.Set(partKey, partVal)
 		}
 	}
 
@@ -182,8 +188,6 @@ func (app *application) ParseFilters(
 	if f.PageSize != nil && c.PageSize != nil {
 		v.Check(c.PageSize(*f.PageSize), "page_size", "parameter is invalid")
 	}
-
-	app.logger.Debug("Parsed filters", "filters", f)
 
 	return f
 }

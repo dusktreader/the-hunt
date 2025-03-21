@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/dusktreader/the-hunt/internal/data"
+	"github.com/dusktreader/the-hunt/internal/logs"
 	"github.com/joho/godotenv"
 )
 
@@ -32,24 +32,17 @@ func main() {
 	err := env.Parse(&cfg)
 	MaybeDie(err)
 
-	logOpts := &slog.HandlerOptions{
-		Level: slog.LevelDebug,
-	}
-	if cfg.APIEnv == "development" {
-		logOpts.Level = slog.LevelDebug
-	}
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, logOpts))
+	logs.InitLogger(cfg)
 
 	dsn := buildDSN(cfg)
-	logger.Info("Attempting to connect to the database", "dsn", dsn)
+	slog.Info("Attempting to connect to the database", "dsn", dsn)
 	db, err := openDB(dsn, cfg)
 	MaybeDie(err)
 	defer db.Close()
-	logger.Info("Database connection pool established")
+	slog.Info("Database connection pool established")
 
 	app := &application{
 		config: cfg,
-		logger: logger,
 		models: data.NewModels(db, data.NewModelConfig(cfg)),
 	}
 
@@ -59,10 +52,10 @@ func main() {
 		IdleTimeout:	time.Minute,
 		ReadTimeout:	5 * time.Second,
 		WriteTimeout:	10 * time.Second,
-		ErrorLog:		slog.NewLogLogger(logger.Handler(), slog.LevelError),
+		ErrorLog:		slog.NewLogLogger(slog.Default().Handler(), slog.LevelError),
 	}
 
-	logger.Info("Starting server", "Config", cfg)
+	slog.Info("Starting server", "Config", cfg)
 
 	err = srv.ListenAndServe()
 	MaybeDie(err)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log/slog"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -12,10 +13,10 @@ func (app *application) routes() http.Handler {
 	router.NotFound = http.HandlerFunc(app.routeNotFoundResponse)
 	router.MethodNotAllowed = http.HandlerFunc(app.notAllowedResponse)
 
-	app.logger.Debug("Adding health routes")
+	slog.Debug("Adding health routes")
 	router.HandlerFunc(http.MethodGet, "/health", app.healthHandler)
 
-	app.logger.Debug("Adding company routes")
+	slog.Debug("Adding company routes")
 	router.HandlerFunc(http.MethodPost, "/v1/companies", app.createCompanyHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/companies", app.readManyCompaniesHandler)
 	router.HandlerFunc(http.MethodGet, "/v1/companies/:id", app.readCompanyHandler)

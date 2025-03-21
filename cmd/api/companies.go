@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/dusktreader/the-hunt/internal/data"
@@ -22,7 +23,7 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	app.logger.Debug("Creating a new company", "input", input)
+	slog.Debug("Creating a new company", "input", input)
 
 	v := validator.New()
 
@@ -32,7 +33,7 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 		TechStack:	input.TechStack,
 	}
 
-	app.logger.Debug("Validating new company")
+	slog.Debug("Validating new company")
 
 	c.Validate(v)
 	if !v.Valid() {
@@ -40,7 +41,7 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	app.logger.Debug("Inserting new company into database")
+	slog.Debug("Inserting new company into database")
 
 	err = app.models.Company.Insert(c)
 	if err != nil {
@@ -48,7 +49,7 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	app.logger.Debug("Serializing response")
+	slog.Debug("Serializing response")
 
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/v1/companies/%d", c.ID))
@@ -71,7 +72,7 @@ func (app *application) readCompanyHandler(w http.ResponseWriter, r *http.Reques
 		app.badIdResponse(w, r, err)
 		return
 	}
-	app.logger.Debug("Fetching company details", "id", id)
+	slog.Debug("Fetching company details", "id", id)
 
 	c, err := app.models.Company.GetOne(id)
 	if err != nil {
@@ -83,7 +84,7 @@ func (app *application) readCompanyHandler(w http.ResponseWriter, r *http.Reques
 		}
 		return
 	}
-	app.logger.Debug("Retrieved company", "Company", *c)
+	slog.Debug("Retrieved company", "Company", *c)
 
 	err = app.writeJSON(w, &data.JSONResponse{
 		Data:			c,
@@ -96,7 +97,7 @@ func (app *application) readCompanyHandler(w http.ResponseWriter, r *http.Reques
 }
 
 func (app *application) readManyCompaniesHandler(w http.ResponseWriter, r *http.Request) {
-	app.logger.Debug("Fetching company list")
+	slog.Debug("Fetching company list")
 
 	qs := r.URL.Query()
 	v := validator.New()
@@ -116,13 +117,13 @@ func (app *application) readManyCompaniesHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	app.logger.Debug("Retrieved filters", "filters", filters)
+	slog.Debug("Retrieved filters", "filters", filters)
 
 	companies, err := app.models.Company.GetMany(filters)
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Couldn't retrieve companies")
 	}
-	app.logger.Debug("Fetched companies", "count", len(companies))
+	slog.Debug("Fetched companies", "count", len(companies))
 
 	err = app.writeJSON(w, &data.JSONResponse{
 		Data:			companies,
@@ -141,7 +142,7 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	app.logger.Debug("Updating company", "id", id)
+	slog.Debug("Updating company", "id", id)
 
 	c, err := app.models.Company.GetOne(id)
 	if err != nil {
@@ -153,7 +154,7 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 		}
 		return
 	}
-	app.logger.Debug("Retrieved company", "Company", *c)
+	slog.Debug("Retrieved company", "Company", *c)
 
 	var input struct {
 		Name		string		`json:"name"`
@@ -167,13 +168,13 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	app.logger.Debug("Updating company with request payload", "id", id, "input", input)
+	slog.Debug("Updating company with request payload", "id", id, "input", input)
 
 	c.Name = input.Name
 	c.URL = input.URL
 	c.TechStack = input.TechStack
 
-	app.logger.Debug("Validating updated company", "id", id, "company", c)
+	slog.Debug("Validating updated company", "id", id, "company", c)
 
 	v := validator.New()
 	c.Validate(v)
@@ -182,7 +183,7 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	app.logger.Debug("Updating company in database")
+	slog.Debug("Updating company in database")
 
 	err = app.models.Company.Update(c)
 	if err != nil {
@@ -190,7 +191,7 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	app.logger.Debug("Serializing response")
+	slog.Debug("Serializing response")
 
 	err = app.writeJSON(w, &data.JSONResponse{
 		Data: 			c,
@@ -210,7 +211,7 @@ func (app *application) updatePartialCompanyHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	app.logger.Debug("Partially updating company", "id", id)
+	slog.Debug("Partially updating company", "id", id)
 
 	version, err := app.models.Company.GetVersion(id)
 	if err != nil {
@@ -222,7 +223,7 @@ func (app *application) updatePartialCompanyHandler(w http.ResponseWriter, r *ht
 		}
 		return
 	}
-	app.logger.Debug("Retrieved version", "Version", version)
+	slog.Debug("Retrieved version", "Version", version)
 
 	pc := data.PartialCompany{}
 
@@ -231,9 +232,9 @@ func (app *application) updatePartialCompanyHandler(w http.ResponseWriter, r *ht
 		app.badRequestResponse(w, r, err)
 		return
 	}
-	app.logger.Debug("Updating company with request payload", "id", id, "input", pc)
+	slog.Debug("Updating company with request payload", "id", id, "input", pc)
 
-	app.logger.Debug("Validating partial company", "id", id, "partial_company", pc)
+	slog.Debug("Validating partial company", "id", id, "partial_company", pc)
 	v := validator.New()
 	pc.Validate(v)
 	if !v.Valid() {
@@ -241,7 +242,7 @@ func (app *application) updatePartialCompanyHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	app.logger.Debug("Updating company in database")
+	slog.Debug("Updating company in database")
 	c, err := app.models.Company.PartialUpdate(id, version, &pc)
 	if err != nil {
 		switch {
@@ -253,7 +254,7 @@ func (app *application) updatePartialCompanyHandler(w http.ResponseWriter, r *ht
 		return
 	}
 
-	app.logger.Debug("Serializing response")
+	slog.Debug("Serializing response")
 
 	err = app.writeJSON(w, &data.JSONResponse{
 		Data: 			c,
@@ -272,7 +273,7 @@ func (app *application) deleteCompanyHandler(w http.ResponseWriter, r *http.Requ
 		app.badIdResponse(w, r, err)
 		return
 	}
-	app.logger.Debug("Deleting company", "id", id)
+	slog.Debug("Deleting company", "id", id)
 
 	err = app.models.Company.Delete(id)
 	if err != nil {
@@ -284,7 +285,7 @@ func (app *application) deleteCompanyHandler(w http.ResponseWriter, r *http.Requ
 		}
 		return
 	}
-	app.logger.Debug("Deleted company", "id", id)
+	slog.Debug("Deleted company", "id", id)
 
 	err = app.writeJSON(w, &data.JSONResponse{
 		Data:			"Company deleted successfully",

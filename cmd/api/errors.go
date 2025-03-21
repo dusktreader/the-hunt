@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/dusktreader/the-hunt/internal/data"
@@ -21,7 +22,7 @@ func (app *application) errorResponse(
 		EnvelopeKey:	"error",
 	})
 	if err != nil {
-		app.logger.Error("Couldn't serialize error response", "error", err)
+		slog.Error("Couldn't serialize error response", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 }

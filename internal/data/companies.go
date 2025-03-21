@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -150,6 +151,9 @@ func (m CompanyModel) GetMany(f Filters) ([]*Company, error) {
 	if f.Search != nil {
 		for k, v := range *f.Search {
 			where_parts = append(where_parts, fmt.Sprintf("%s ~* $%d", k, i))
+			// Maybe try full text search down the road, but for now simple partial matching is what I want
+			// Also consider using a gin index for partial matching
+			// where_parts = append(where_parts, fmt.Sprintf("to_tsvector('simple', %s) @@ plainto_tsquery('simple', $%d)", k, i))
 			args = append(args, v)
 			i += 1
 		}
@@ -167,7 +171,22 @@ func (m CompanyModel) GetMany(f Filters) ([]*Company, error) {
 		query_parts = append(query_parts, `where`, strings.Join(where_parts, " and "))
 	}
 
+
+	sort_parts := []string{}
+
+	if f.Sort != nil {
+		for k, v := range f.Sort.FromOldest() {
+			sort_parts = append(sort_parts, fmt.Sprintf("%s %s", k, v))
+		}
+	}
+
+	if len(sort_parts) > 0 {
+		query_parts = append(query_parts, `order by`, strings.Join(sort_parts, ", "))
+	}
+
 	query := strings.Join(query_parts, " ")
+
+	slog.Debug("Assembled GetMany query", "query", query, "args", args)
 
 	ctx, cancel := context.WithTimeout(context.Background(), m.CFG.QueryTimeout)
 	defer cancel()
