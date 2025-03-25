@@ -17,9 +17,8 @@ func (app *application) errorResponse(
 ) {
 	app.logError(r, ep)
 	err := app.writeJSON(w, &data.JSONResponse{
-		Data:			ep,
+		Envelope:		data.Envelope{"error": ep},
 		StatusCode:		ep.StatusCode,
-		EnvelopeKey:	"error",
 	})
 	if err != nil {
 		slog.Error("Couldn't serialize error response", "error", err)
@@ -102,5 +101,12 @@ func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Requ
 	app.errorResponse(w, r, &data.ErrorPackage{
 		StatusCode:	http.StatusConflict,
 		Message:	"Unable to update the record due to an edit conflict; please try again",
+	})
+}
+
+func (app *application) rateLimitExceededResponse(w http.ResponseWriter, r *http.Request) {
+	app.errorResponse(w, r, &data.ErrorPackage{
+		StatusCode:	http.StatusTooManyRequests,
+		Message:	"Rate limit exceeded",
 	})
 }

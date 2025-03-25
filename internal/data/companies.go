@@ -114,7 +114,7 @@ func (m CompanyModel) GetOne(id int64) (*Company, error) {
 	query := `
 		select id, created_at, updated_at, name, url, tech_stack, version
 		from (
-			select pg_sleep(4), id, created_at, updated_at, name, url, tech_stack, version
+			select id, created_at, updated_at, name, url, tech_stack, version
 			from companies
 			where id = $1
 		)
@@ -138,11 +138,10 @@ func (m CompanyModel) GetOne(id int64) (*Company, error) {
 	)
 }
 
-func (m CompanyModel) GetMany(f Filters) ([]*Company, error) {
-	i := 1
+func (m CompanyModel) GetMany(f Filters) ([]*Company, *ListMetadata, error) {
 	args := []any{}
 	query_parts := []string{`
-		select id, created_at, updated_at, name, url, tech_stack, version
+		select count(*) over (), id, created_at, updated_at, name, url, tech_stack, version
 		from companies
 	`}
 
@@ -150,25 +149,23 @@ func (m CompanyModel) GetMany(f Filters) ([]*Company, error) {
 
 	if f.Search != nil {
 		for k, v := range *f.Search {
-			where_parts = append(where_parts, fmt.Sprintf("%s ~* $%d", k, i))
+			args = append(args, v)
+			where_parts = append(where_parts, fmt.Sprintf("%s ~* $%d", k, len(args)))
 			// Maybe try full text search down the road, but for now simple partial matching is what I want
 			// Also consider using a gin index for partial matching
 			// where_parts = append(where_parts, fmt.Sprintf("to_tsvector('simple', %s) @@ plainto_tsquery('simple', $%d)", k, i))
-			args = append(args, v)
-			i += 1
 		}
 	}
 
 	if f.In != nil {
 		for k, v := range *f.In {
-			where_parts = append(where_parts, fmt.Sprintf("$%d = any(%s)", i, k))
 			args = append(args, v)
-			i += 1
+			where_parts = append(where_parts, fmt.Sprintf("$%d = any(%s)", len(args), k))
 		}
 	}
 
 	if len(where_parts) > 0 {
-		query_parts = append(query_parts, `where`, strings.Join(where_parts, " and "))
+		query_parts = append(query_parts, "where", strings.Join(where_parts, " and "))
 	}
 
 
@@ -181,7 +178,12 @@ func (m CompanyModel) GetMany(f Filters) ([]*Company, error) {
 	}
 
 	if len(sort_parts) > 0 {
-		query_parts = append(query_parts, `order by`, strings.Join(sort_parts, ", "))
+		query_parts = append(query_parts, "order by", strings.Join(sort_parts, ", "))
+	}
+
+	if f.Page != nil && f.PageSize != nil {
+		args = append(args, *f.PageSize, (*f.Page - 1) * *f.PageSize)
+		query_parts = append(query_parts, fmt.Sprintf("limit $%d offset $%d", len(args) - 1, len(args)))
 	}
 
 	query := strings.Join(query_parts, " ")
@@ -193,14 +195,16 @@ func (m CompanyModel) GetMany(f Filters) ([]*Company, error) {
 
 	rows, err := m.DB.QueryContext(ctx, query, args...)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	defer rows.Close()
 
+	var recordCount int
 	companies := make([]*Company, 0, 10)
 	for rows.Next() {
 		var c Company
 		err := rows.Scan(
+			&recordCount,
 			&c.ID,
 			&c.CreatedAt,
 			&c.UpdatedAt,
@@ -210,14 +214,15 @@ func (m CompanyModel) GetMany(f Filters) ([]*Company, error) {
 			&c.Version,
 		)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		companies = append(companies, &c)
 	}
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return companies, nil
+	metadata := NewListMetadata(f, recordCount)
+	return companies, &metadata, nil
 }
 
 func (m CompanyModel) Update(company *Company) error {

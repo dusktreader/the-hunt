@@ -17,12 +17,11 @@ func (app *application) healthHandler(w http.ResponseWriter, r *http.Request) {
 	jr := &data.JSONResponse{
 		StatusCode:		http.StatusOK,
 		Headers:		nil,
-		EnvelopeKey:	"health",
-		Data:			&healthResponse{
+		Envelope:		data.Envelope{"health": healthResponse{
 							Status:			"available",
 							Environment: 	app.config.APIEnv,
 							Version:		version,
-						},
+						}},
 	}
 	app.writeJSON(w, jr)
 }

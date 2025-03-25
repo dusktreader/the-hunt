@@ -24,5 +24,9 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPatch, "/v1/companies/:id", app.updatePartialCompanyHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/companies/:id", app.deleteCompanyHandler)
 
-	return app.recoverPanic(router)
+	return app.recoverPanic(
+		app.rateLimit(
+			router,
+		),
+	)
 }

@@ -55,10 +55,9 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 	headers.Set("Location", fmt.Sprintf("/v1/companies/%d", c.ID))
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Data: 			c,
+		Envelope: 		data.Envelope{"company": c},
 		StatusCode:		http.StatusCreated,
 		Headers:		headers,
-		EnvelopeKey:	"company",
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize company data")
@@ -87,9 +86,8 @@ func (app *application) readCompanyHandler(w http.ResponseWriter, r *http.Reques
 	slog.Debug("Retrieved company", "Company", *c)
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Data:			c,
+		Envelope: 		data.Envelope{"company": c},
 		StatusCode:		http.StatusOK,
-		EnvelopeKey:	"company",
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize company data")
@@ -101,15 +99,13 @@ func (app *application) readManyCompaniesHandler(w http.ResponseWriter, r *http.
 
 	qs := r.URL.Query()
 	v := validator.New()
-	filters := app.ParseFilters(
+	filters := data.ParseFilters(
 		qs,
 		v,
 		data.FilterConstraints{
 			Search:		data.CompanySearchFields.Check,
 			Sort:		data.CompanySortFields.Check,
 			In:			data.CompanyInFields.Check,
-			Page:		func(i int) bool {return i >= 1},
-			PageSize:	func(i int) bool {return i >= 1 || i <= 100},
 		},
 	)
 	if !v.Valid() {
@@ -119,16 +115,18 @@ func (app *application) readManyCompaniesHandler(w http.ResponseWriter, r *http.
 
 	slog.Debug("Retrieved filters", "filters", filters)
 
-	companies, err := app.models.Company.GetMany(filters)
+	companies, metadata, err := app.models.Company.GetMany(filters)
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Couldn't retrieve companies")
 	}
-	slog.Debug("Fetched companies", "count", len(companies))
+	slog.Debug("Fetched companies", "metadata", metadata)
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Data:			companies,
 		StatusCode:		http.StatusOK,
-		EnvelopeKey:	"companies",
+		Envelope: 		data.Envelope{
+			"companies": companies,
+			"metadata": metadata,
+		},
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize company data")
@@ -194,9 +192,8 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 	slog.Debug("Serializing response")
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Data: 			c,
+		Envelope: 		data.Envelope{"company": c},
 		StatusCode:		http.StatusOK,
-		EnvelopeKey:	"company",
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize company data")
@@ -257,9 +254,8 @@ func (app *application) updatePartialCompanyHandler(w http.ResponseWriter, r *ht
 	slog.Debug("Serializing response")
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Data: 			c,
+		Envelope: 		data.Envelope{"company": c},
 		StatusCode:		http.StatusOK,
-		EnvelopeKey:	"company",
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize company data")
@@ -288,9 +284,8 @@ func (app *application) deleteCompanyHandler(w http.ResponseWriter, r *http.Requ
 	slog.Debug("Deleted company", "id", id)
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Data:			"Company deleted successfully",
+		Envelope: 		data.Envelope{"message": "Company deleted successfully"},
 		StatusCode:		http.StatusOK,
-		EnvelopeKey:	"message",
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize response")

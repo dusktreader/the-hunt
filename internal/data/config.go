@@ -1,6 +1,10 @@
 package data
 
-import "time"
+import (
+	"time"
+
+	"golang.org/x/time/rate"
+)
 
 type Config struct {
 	APIPort	int		`env:"API_PORT" envDefault:"4000"`
@@ -16,4 +20,11 @@ type Config struct {
 	DBMaxIdleConns	int				`env:"DB_MAX_IDLE_CONNS" envDefault:"25"`
 	DBMaxIdleTime	time.Duration	`env:"DB_MAX_IDLE_TIME"  envDefault:"15m"`
 	DBQueryTimeout	time.Duration	`env:"DB_QUERY_TIMEOUT"  envDefault:"3s"`
+
+	LimitEnabled	bool			`env:"LIMIT_ENABLED" envDefault:"true"`
+	LimitRPS		rate.Limit		`env:"LIMIT_RPS"     envDefault:"2.0"`
+	LimitBurst		int				`env:"LIMIT_BURST"   envDefault:"4"`
+
+	ClientCleanupInterval	time.Duration	`env:"CLIENT_CLEANUP_INTERVAL" envDefault:"1m"`
+	ClientCleanupTimeout	time.Duration	`env:"CLIENT_CLEANUP_TIMEOUT"  envDefault:"3m"`
 }
