@@ -27,6 +27,13 @@ func Die(msg string, flags ...interface{}) {
 	os.Exit(1)
 }
 
+func Close(msg string, flags ...interface{}) {
+	msg = fmt.Sprintf(msg, flags...)
+	fmt.Fprintln(os.Stderr, "Closing:", msg)
+	os.Exit(0)
+}
+
+
 func (app *application) logError(r *http.Request, er *data.ErrorPackage) {
 	var logMessage string
 	if er.LogMessage == "" {

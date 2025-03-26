@@ -13,8 +13,8 @@ type Config struct {
 	DBPort	string	`env:"DB_PORT" envDefault:"5432"`
 	DBUser	string	`env:"DB_USER" envDefault:"compose-db-user"`
 	DBPswd	string	`env:"DB_PSWD" envDefault:"compose-db-pswd"`
-	DBName	string	`env:"DB_PSWD" envDefault:"compose-db-name"`
-	DBHost	string	`env:"DB_PSWD" envDefault:"db"`
+	DBName	string	`env:"DB_NAME" envDefault:"compose-db-name"`
+	DBHost	string	`env:"DB_HOST" envDefault:"db"`
 
 	DBMaxOpenConns	int				`env:"DB_MAX_OPEN_CONNS" envDefault:"25"`
 	DBMaxIdleConns	int				`env:"DB_MAX_IDLE_CONNS" envDefault:"25"`

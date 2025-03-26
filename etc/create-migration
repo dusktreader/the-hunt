@@ -12,3 +12,5 @@ docker compose run \
     --volume=/etc/group:/etc/group:ro \
     --user="$(id -u):$(id -g)" \
     migrate goose create -s $1 sql
+
+$EDITOR migrations/*$1.sql

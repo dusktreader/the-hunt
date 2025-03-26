@@ -1,0 +1,13 @@
+#!/usr/bin/bash
+
+# Migrates the database down by 1 step.
+# Specify a specific migration to migrate to with the only arg.
+
+set -euxo pipefail
+
+if [[ $# -eq 0 ]]; then
+  docker compose run --rm migrate goose up
+else
+  docker compose run --rm migrate goose up-to $1
+fi
+

@@ -1,10 +1,7 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
-	"net/http"
-	"time"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/dusktreader/the-hunt/internal/data"
@@ -46,17 +43,6 @@ func main() {
 		models: data.NewModels(db, data.NewModelConfig(cfg)),
 	}
 
-	srv := &http.Server{
-		Addr:			fmt.Sprintf(":%d", cfg.APIPort),
-		Handler:		app.routes(),
-		IdleTimeout:	time.Minute,
-		ReadTimeout:	5 * time.Second,
-		WriteTimeout:	10 * time.Second,
-		ErrorLog:		slog.NewLogLogger(slog.Default().Handler(), slog.LevelError),
-	}
-
-	slog.Info("Starting server", "Config", cfg)
-
-	err = srv.ListenAndServe()
-	MaybeDie(err)
+	MaybeDie(app.serve())
+	Close("App finished")
 }
