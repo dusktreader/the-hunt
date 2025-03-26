@@ -4,24 +4,31 @@ import (
 	"net/http"
 
 	"github.com/dusktreader/the-hunt/internal/data"
+	"github.com/dusktreader/the-hunt/internal/types"
 )
 
 type healthResponse struct {
-	Status		string `json:"status"`
-	Environment	string `json:"environment"`
-	Version		string `json:"version"`
+	Status		string				`json:"status"`
+	Environment	types.Environment	`json:"environment"`
+	Version		string				`json:"version"`
+	Config		*data.Config		`json:"config"`
 }
 
 
 func (app *application) healthHandler(w http.ResponseWriter, r *http.Request) {
+	hr := healthResponse{
+		Status:			"available",
+		Environment: 	app.config.APIEnv,
+		Version:		version,
+	}
+	if hr.Environment.IsDev() {
+		hr.Config = &app.config
+	}
+
 	jr := &data.JSONResponse{
 		StatusCode:		http.StatusOK,
 		Headers:		nil,
-		Envelope:		data.Envelope{"health": healthResponse{
-							Status:			"available",
-							Environment: 	app.config.APIEnv,
-							Version:		version,
-						}},
+		Envelope:		data.Envelope{"health": hr},
 	}
 	app.writeJSON(w, jr)
 }

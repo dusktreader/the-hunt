@@ -1,10 +1,10 @@
-package data_test
+package types_test
 
 import (
 	"errors"
 	"testing"
 
-	"github.com/dusktreader/the-hunt/internal/data"
+	"github.com/dusktreader/the-hunt/internal/types"
 )
 
 var (
@@ -15,7 +15,7 @@ var (
 )
 
 func TestMapError(t *testing.T) {
-	errMap := data.ErrorMap{
+	errMap := types.ErrorMap{
 		ErrTestJawa: ErrTestEwok,
 		ErrTestPyke: ErrTestHutt,
 	}
@@ -47,7 +47,7 @@ func TestMapError(t *testing.T) {
 		},
 	}
 	for _, c := range cases {
-		gotErr := data.MapError(c.err, errMap)
+		gotErr := types.MapError(c.err, errMap)
 		if (gotErr == nil && c.wantErr != nil) || (!errors.Is(gotErr, c.wantErr)) {
 			t.Errorf("%s: expected %v for %v, got %v", c.name, c.wantErr, c.err, gotErr)
 		}

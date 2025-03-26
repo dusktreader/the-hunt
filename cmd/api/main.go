@@ -1,15 +1,15 @@
 package main
 
 import (
-	"fmt"
 	"log/slog"
-	"net/http"
-	"time"
+	"sync"
 
 	"github.com/caarlos0/env/v11"
+	"github.com/joho/godotenv"
+
 	"github.com/dusktreader/the-hunt/internal/data"
 	"github.com/dusktreader/the-hunt/internal/logs"
-	"github.com/joho/godotenv"
+	"github.com/dusktreader/the-hunt/internal/mailer"
 )
 
 const version = "0.1.0"
@@ -21,8 +21,9 @@ type config struct {
 
 type application struct {
 	config	data.Config
-	logger	*slog.Logger
 	models	data.Models
+	mailer	*mailer.Mailer
+	waiter	*sync.WaitGroup
 }
 
 func main() {
@@ -41,22 +42,16 @@ func main() {
 	defer db.Close()
 	slog.Info("Database connection pool established")
 
+	mailer, err := mailer.New(cfg)
+	MaybeDie(err)
+
 	app := &application{
 		config: cfg,
 		models: data.NewModels(db, data.NewModelConfig(cfg)),
+		mailer: mailer,
+		waiter: new(sync.WaitGroup),
 	}
 
-	srv := &http.Server{
-		Addr:			fmt.Sprintf(":%d", cfg.APIPort),
-		Handler:		app.routes(),
-		IdleTimeout:	time.Minute,
-		ReadTimeout:	5 * time.Second,
-		WriteTimeout:	10 * time.Second,
-		ErrorLog:		slog.NewLogLogger(slog.Default().Handler(), slog.LevelError),
-	}
-
-	slog.Info("Starting server", "Config", cfg)
-
-	err = srv.ListenAndServe()
-	MaybeDie(err)
+	MaybeDie(app.serve())
+	Close("App finished")
 }

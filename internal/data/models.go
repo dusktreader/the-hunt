@@ -18,11 +18,17 @@ func NewModelConfig(cfg ...Config) ModelConfig {
 }
 
 type Models struct {
-	Company CompanyModel
+	Company		CompanyModel
+	User		UserModel
+	Token		TokenModel
+	Permission	PermissionModel
 }
 
 func NewModels(db *sql.DB, cfg ModelConfig) Models {
 	return Models{
-		Company: CompanyModel{DB: db, CFG: cfg},
+		Company:	CompanyModel{DB: db, CFG: cfg},
+		User:		UserModel{DB: db, CFG: cfg},
+		Token:		TokenModel{DB: db, CFG: cfg},
+		Permission:	PermissionModel{DB: db, CFG: cfg},
 	}
 }

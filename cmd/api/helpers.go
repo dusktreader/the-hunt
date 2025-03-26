@@ -27,6 +27,29 @@ func Die(msg string, flags ...interface{}) {
 	os.Exit(1)
 }
 
+func Close(msg string, flags ...interface{}) {
+	msg = fmt.Sprintf(msg, flags...)
+	fmt.Fprintln(os.Stderr, "Closing:", msg)
+	os.Exit(0)
+}
+
+func (app *application) background(fn func() error) {
+	app.waiter.Add(1)
+	go func() {
+		defer app.waiter.Done()
+		defer func() {
+			if err := recover(); err != nil {
+				slog.Error("Recovered from panic", "error", err)
+			}
+		}()
+
+		err := fn()
+		if err != nil {
+			slog.Error("Background task failed", "error", err)
+		}
+	}()
+}
+
 func (app *application) logError(r *http.Request, er *data.ErrorPackage) {
 	var logMessage string
 	if er.LogMessage == "" {
@@ -88,36 +111,49 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 	err := dec.Decode(dst)
 	if err != nil {
 
+		var mappedErr error
 		var syntaxError *json.SyntaxError
 		var unmarshalTypeError *json.UnmarshalTypeError
 		var invalidUnmarshalError *json.InvalidUnmarshalError
 
 		switch {
 			case errors.As(err, &syntaxError):
-				return fmt.Errorf("Body contains badly-formed JSON (at character %d)", syntaxError.Offset)
+				mappedErr = fmt.Errorf("Body contains badly-formed JSON (at character %d)", syntaxError.Offset)
 
 			case errors.Is(err, io.ErrUnexpectedEOF):
-				return fmt.Errorf("Body contains badly-formed JSON")
+				mappedErr = fmt.Errorf("Body contains badly-formed JSON")
 
 			case errors.As(err, &unmarshalTypeError):
 				if unmarshalTypeError.Field != "" {
-					return fmt.Errorf("Body contains an incorrect JSON type for the %q field", unmarshalTypeError.Field)
+					mappedErr = fmt.Errorf("Body contains an incorrect JSON type for the %q field", unmarshalTypeError.Field)
+				} else {
+					mappedErr = fmt.Errorf("Body contains an incorrect JSON type (at character %d)", unmarshalTypeError.Offset)
 				}
-				return fmt.Errorf("Body contains an incorrect JSON type (at character %d)", unmarshalTypeError.Offset)
 
 			case errors.Is(err, io.EOF):
-				return fmt.Errorf("Body must not be empty")
+				mappedErr = fmt.Errorf("Body must not be empty")
 
 			case errors.As(err, &invalidUnmarshalError):
 				panic(err)
 
 			default:
-				return err
+				mappedErr = err
+
+			slog.Debug(
+				"There was an error reading JSON from the request",
+				"original_error",
+				err,
+				"mapped_error",
+				mappedErr,
+			)
+			return mappedErr
 		}
 	}
+	slog.Debug("Decoded JSON payload", "payload", dst)
 
 	err = dec.Decode(&struct{}{})
 	if !errors.Is(err, io.EOF) {
+		slog.Debug("The body contained multiple JSON values")
 		return fmt.Errorf("Body must only contain a single JSON value")
 	}
 	return nil

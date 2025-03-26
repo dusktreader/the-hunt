@@ -1,13 +1,13 @@
 -- +goose Up
 -- +goose StatementBegin
 create table companies (
-  id         bigserial    primary key,
-  created_at timestamp(0) not null default now(),
-  updated_at timestamp(0) not null default now(),
-  name       text         unique not null,
-  url        text         not null default '',
-  tech_stack text[]       not null,
-  version    bigint       not null default 0
+  id         bigserial                   primary key,
+  created_at timestamp(0) with time zone not null default now(),
+  updated_at timestamp(0) with time zone not null default now(),
+  name       text                        unique not null,
+  url        text                        not null default '',
+  tech_stack text[]                      not null,
+  version    bigint                      not null default 0
 );
 -- +goose StatementEnd
 

@@ -8,25 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dusktreader/the-hunt/internal/validator"
 	"github.com/lib/pq"
+
+	"github.com/dusktreader/the-hunt/internal/types"
 )
-
-type Company struct {
-	ID			int64		`json:"id"`
-	CreatedAt	time.Time	`json:"created_at"`
-	UpdatedAt	time.Time	`json:"updated_at"`
-	Name		string		`json:"name"`
-	URL			string		`json:"url,omitzero"`
-	TechStack   []string	`json:"tech_stack,omitempty"`
-	Version		int64		`json:"version"`
-}
-
-type PartialCompany struct {
-	Name		*string		`json:"name"`
-	URL			*string		`json:"url"`
-	TechStack   []string	`json:"tech_stack"`
-}
 
 type CompanyModel struct {
 	DB *sql.DB
@@ -36,35 +21,6 @@ type CompanyModel struct {
 var CompanySearchFields = NewSearchFields("name", "tech_stack")
 var CompanySortFields = NewSortFields("id", "created_at", "updated_at", "name")
 var CompanyInFields = NewInFields("tech_stack")
-
-func (c *Company) Validate(v *validator.Validator) {
-	v.Check(c.Name != "", "name", "must be provided")
-	v.Check(len(c.Name) <= 128, "name", "must not be more than 128 bytes")
-
-	v.Check(validator.IsURL(c.URL), "url", "must be a valid URL")
-
-	v.Check(c.TechStack != nil, "tech_stack", "must be provided")
-	v.Check(len(c.TechStack) > 0, "tech_stack", "must not be empty")
-	v.Check(len(c.TechStack) <= 5, "tech_stack", "must not be more than 5 items")
-	v.Check(validator.Unique(c.TechStack), "tech_stack", "must not contain duplicate items")
-}
-
-func (pc *PartialCompany) Validate(v *validator.Validator) {
-	if pc.Name != nil {
-		v.Check(*pc.Name != "", "name", "must be provided")
-		v.Check(len(*pc.Name) <= 128, "name", "must not be more than 128 bytes")
-	}
-
-	if pc.URL != nil {
-		v.Check(validator.IsURL(*pc.URL), "url", "must be a valid URL")
-	}
-
-	if pc.TechStack != nil {
-		v.Check(len(pc.TechStack) > 0, "tech_stack", "must not be empty")
-		v.Check(len(pc.TechStack) <= 5, "tech_stack", "must not be more than 5 items")
-		v.Check(validator.Unique(pc.TechStack), "tech_stack", "must not contain duplicate items")
-	}
-}
 
 func (m CompanyModel) GetVersion(id int64) (int64, error) {
 	query := `
@@ -77,13 +33,13 @@ func (m CompanyModel) GetVersion(id int64) (int64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), m.CFG.QueryTimeout)
 	defer cancel()
 
-	return version, MapError(
+	return version, types.MapError(
 		m.DB.QueryRowContext(ctx, query, id).Scan(&version),
-		ErrorMap{sql.ErrNoRows: ErrRecordNotFound},
+		types.ErrorMap{sql.ErrNoRows: types.ErrRecordNotFound},
 	)
 }
 
-func (m CompanyModel) Insert(company *Company) error {
+func (m CompanyModel) Insert(company *types.Company) error {
 	query := `
 		insert into companies (name, url, tech_stack)
 		values ($1, $2, $3)
@@ -98,33 +54,29 @@ func (m CompanyModel) Insert(company *Company) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.CFG.QueryTimeout)
 	defer cancel()
 
-	return m.DB.QueryRowContext(
-		ctx,
-		query,
-		args...,
-	).Scan(
-		&company.ID,
-		&company.CreatedAt,
-		&company.UpdatedAt,
-		&company.Version,
+	return types.MapError(
+		m.DB.QueryRowContext(ctx, query, args...).Scan(
+			&company.ID,
+			&company.CreatedAt,
+			&company.UpdatedAt,
+			&company.Version,
+		),
+		types.ErrorMap{".*duplicate key.*": types.ErrDuplicateKey},
 	)
 }
 
-func (m CompanyModel) GetOne(id int64) (*Company, error) {
+func (m CompanyModel) GetOne(id int64) (*types.Company, error) {
 	query := `
 		select id, created_at, updated_at, name, url, tech_stack, version
-		from (
-			select id, created_at, updated_at, name, url, tech_stack, version
-			from companies
-			where id = $1
-		)
+		from companies
+		where id = $1
 	`
-	var c Company
+	var c types.Company
 
 	ctx, cancel := context.WithTimeout(context.Background(), m.CFG.QueryTimeout)
 	defer cancel()
 
-	return &c, MapError(
+	return &c, types.MapError(
 		m.DB.QueryRowContext(ctx, query, id).Scan(
 			&c.ID,
 			&c.CreatedAt,
@@ -134,11 +86,11 @@ func (m CompanyModel) GetOne(id int64) (*Company, error) {
 			pq.Array(&c.TechStack),
 			&c.Version,
 		),
-		ErrorMap{sql.ErrNoRows: ErrRecordNotFound},
+		types.ErrorMap{sql.ErrNoRows: types.ErrRecordNotFound},
 	)
 }
 
-func (m CompanyModel) GetMany(f Filters) ([]*Company, *ListMetadata, error) {
+func (m CompanyModel) GetMany(f Filters) ([]*types.Company, *ListMetadata, error) {
 	args := []any{}
 	query_parts := []string{`
 		select count(*) over (), id, created_at, updated_at, name, url, tech_stack, version
@@ -200,9 +152,9 @@ func (m CompanyModel) GetMany(f Filters) ([]*Company, *ListMetadata, error) {
 	defer rows.Close()
 
 	var recordCount int
-	companies := make([]*Company, 0, 10)
+	companies := make([]*types.Company, 0, 10)
 	for rows.Next() {
-		var c Company
+		var c types.Company
 		err := rows.Scan(
 			&recordCount,
 			&c.ID,
@@ -225,7 +177,7 @@ func (m CompanyModel) GetMany(f Filters) ([]*Company, *ListMetadata, error) {
 	return companies, &metadata, nil
 }
 
-func (m CompanyModel) Update(company *Company) error {
+func (m CompanyModel) Update(company *types.Company) error {
 	query := `
 		update companies
 		set name = $1, url = $2, tech_stack = $3, updated_at = $4, version = version + 1
@@ -241,17 +193,20 @@ func (m CompanyModel) Update(company *Company) error {
 		company.Version,
 	}
 
-	return MapError(
+	return types.MapError(
 		m.DB.QueryRow(query, args...).Scan(&company.Version),
-		ErrorMap{sql.ErrNoRows: ErrEditConflict},
+		types.ErrorMap{
+			sql.ErrNoRows: types.ErrEditConflict,
+			".*duplicate key.*": types.ErrDuplicateKey,
+		},
 	)
 }
 
 func (m CompanyModel) PartialUpdate(
 	id int64,
 	version int64,
-	partial *PartialCompany,
-) (*Company, error) {
+	partial *types.PartialCompany,
+) (*types.Company, error) {
 	query := `
 		update companies
 		set updated_at = $1, version = version + 1
@@ -284,14 +239,14 @@ func (m CompanyModel) PartialUpdate(
 		returning created_at, updated_at, name, url, tech_stack, version
 	`, i, i+1)
 	args = append(args, id, version)
-	c := &Company{
+	c := &types.Company{
 		ID: id,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), m.CFG.QueryTimeout)
 	defer cancel()
 
-	return c, MapError(
+	return c, types.MapError(
 		m.DB.QueryRowContext(ctx, query, args...).Scan(
 			&c.CreatedAt,
 			&c.UpdatedAt,
@@ -300,7 +255,7 @@ func (m CompanyModel) PartialUpdate(
 			pq.Array(&c.TechStack),
 			&c.Version,
 		),
-		ErrorMap{sql.ErrNoRows: ErrEditConflict},
+		types.ErrorMap{sql.ErrNoRows: types.ErrEditConflict},
 	)
 }
 
@@ -324,7 +279,7 @@ func (m CompanyModel) Delete(id int64) error {
 	}
 
 	if rowsAffected == 0 {
-		return ErrRecordNotFound
+		return types.ErrRecordNotFound
 	}
 
 	return nil

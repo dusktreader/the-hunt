@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/dusktreader/the-hunt/internal/data"
+	"github.com/dusktreader/the-hunt/internal/types"
 	"github.com/dusktreader/the-hunt/internal/validator"
 )
 
@@ -27,7 +28,7 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 
 	v := validator.New()
 
-	c := &data.Company{
+	c := &types.Company{
 		Name:		input.Name,
 		URL:		input.URL,
 		TechStack:	input.TechStack,
@@ -45,7 +46,12 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 
 	err = app.models.Company.Insert(c)
 	if err != nil {
-		app.serverErrorResponse(w, r, err, "Couldn't add company")
+		switch {
+			case errors.Is(err, types.ErrDuplicateKey):
+				app.duplicateKeyResponse(w, r)
+			default:
+				app.serverErrorResponse(w, r, err, "Couldn't add company")
+		}
 		return
 	}
 
@@ -76,7 +82,7 @@ func (app *application) readCompanyHandler(w http.ResponseWriter, r *http.Reques
 	c, err := app.models.Company.GetOne(id)
 	if err != nil {
 		switch {
-			case errors.Is(err, data.ErrRecordNotFound):
+			case errors.Is(err, types.ErrRecordNotFound):
 				app.notFoundResponse(w, r, id)
 			default:
 				app.serverErrorResponse(w, r, err, "Couldn't retrieve company")
@@ -145,7 +151,7 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 	c, err := app.models.Company.GetOne(id)
 	if err != nil {
 		switch {
-			case errors.Is(err, data.ErrRecordNotFound):
+			case errors.Is(err, types.ErrRecordNotFound):
 				app.notFoundResponse(w, r, id)
 			default:
 				app.serverErrorResponse(w, r, err)
@@ -185,7 +191,14 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 
 	err = app.models.Company.Update(c)
 	if err != nil {
-		app.serverErrorResponse(w, r, err, "Couldn't update company")
+		switch {
+			case errors.Is(err, types.ErrEditConflict):
+				app.editConflictResponse(w, r)
+			case errors.Is(err, types.ErrDuplicateKey):
+				app.duplicateKeyResponse(w, r)
+			default:
+				app.serverErrorResponse(w, r, err, "Couldn't update company")
+		}
 		return
 	}
 
@@ -213,7 +226,7 @@ func (app *application) updatePartialCompanyHandler(w http.ResponseWriter, r *ht
 	version, err := app.models.Company.GetVersion(id)
 	if err != nil {
 		switch {
-			case errors.Is(err, data.ErrRecordNotFound):
+			case errors.Is(err, types.ErrRecordNotFound):
 				app.notFoundResponse(w, r, id)
 			default:
 				app.serverErrorResponse(w, r, err)
@@ -222,7 +235,7 @@ func (app *application) updatePartialCompanyHandler(w http.ResponseWriter, r *ht
 	}
 	slog.Debug("Retrieved version", "Version", version)
 
-	pc := data.PartialCompany{}
+	pc := types.PartialCompany{}
 
 	err = app.readJSON(w, r, &pc)
 	if err != nil {
@@ -243,7 +256,7 @@ func (app *application) updatePartialCompanyHandler(w http.ResponseWriter, r *ht
 	c, err := app.models.Company.PartialUpdate(id, version, &pc)
 	if err != nil {
 		switch {
-			case errors.Is(err, data.ErrEditConflict):
+			case errors.Is(err, types.ErrEditConflict):
 				app.editConflictResponse(w, r)
 			default:
 				app.serverErrorResponse(w, r, err, "Couldn't update company")
@@ -274,7 +287,7 @@ func (app *application) deleteCompanyHandler(w http.ResponseWriter, r *http.Requ
 	err = app.models.Company.Delete(id)
 	if err != nil {
 		switch {
-			case errors.Is(err, data.ErrRecordNotFound):
+			case errors.Is(err, types.ErrRecordNotFound):
 				app.notFoundResponse(w, r, id)
 			default:
 				app.serverErrorResponse(w, r, err, "Couldn't delete company")
