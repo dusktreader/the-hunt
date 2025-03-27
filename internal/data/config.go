@@ -22,8 +22,8 @@ type Config struct {
 	DBQueryTimeout	time.Duration	`env:"DB_QUERY_TIMEOUT"  envDefault:"3s"`
 
 	LimitEnabled	bool			`env:"LIMIT_ENABLED" envDefault:"true"`
-	LimitRPS		rate.Limit		`env:"LIMIT_RPS"     envDefault:"2.0"`
-	LimitBurst		int				`env:"LIMIT_BURST"   envDefault:"4"`
+	LimitRPS		rate.Limit		`env:"LIMIT_RPS"     envDefault:"5.0"`
+	LimitBurst		int				`env:"LIMIT_BURST"   envDefault:"10"`
 
 	ClientCleanupInterval	time.Duration	`env:"CLIENT_CLEANUP_INTERVAL" envDefault:"1m"`
 	ClientCleanupTimeout	time.Duration	`env:"CLIENT_CLEANUP_TIMEOUT"  envDefault:"3m"`

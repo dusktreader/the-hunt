@@ -98,26 +98,22 @@ func (m CompanyModel) Insert(company *Company) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.CFG.QueryTimeout)
 	defer cancel()
 
-	return m.DB.QueryRowContext(
-		ctx,
-		query,
-		args...,
-	).Scan(
-		&company.ID,
-		&company.CreatedAt,
-		&company.UpdatedAt,
-		&company.Version,
+	return MapError(
+		m.DB.QueryRowContext(ctx, query, args...).Scan(
+			&company.ID,
+			&company.CreatedAt,
+			&company.UpdatedAt,
+			&company.Version,
+		),
+		ErrorMap{".*duplicate key.*": ErrDuplicateKey},
 	)
 }
 
 func (m CompanyModel) GetOne(id int64) (*Company, error) {
 	query := `
 		select id, created_at, updated_at, name, url, tech_stack, version
-		from (
-			select id, created_at, updated_at, name, url, tech_stack, version
-			from companies
-			where id = $1
-		)
+		from companies
+		where id = $1
 	`
 	var c Company
 
@@ -243,7 +239,10 @@ func (m CompanyModel) Update(company *Company) error {
 
 	return MapError(
 		m.DB.QueryRow(query, args...).Scan(&company.Version),
-		ErrorMap{sql.ErrNoRows: ErrEditConflict},
+		ErrorMap{
+			sql.ErrNoRows: ErrEditConflict,
+			".*duplicate key.*": ErrDuplicateKey,
+		},
 	)
 }
 

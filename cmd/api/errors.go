@@ -47,6 +47,13 @@ func (app *application) badIdResponse(w http.ResponseWriter, r *http.Request, er
 	})
 }
 
+func (app *application) duplicateKeyResponse(w http.ResponseWriter, r *http.Request) {
+	app.errorResponse(w, r, &data.ErrorPackage{
+		StatusCode:	http.StatusBadRequest,
+		Message:	"Duplicate key provided",
+	})
+}
+
 func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request, lookupKey ...any) {
 	var details string
 	if len(lookupKey) > 0 {
@@ -108,5 +115,12 @@ func (app *application) rateLimitExceededResponse(w http.ResponseWriter, r *http
 	app.errorResponse(w, r, &data.ErrorPackage{
 		StatusCode:	http.StatusTooManyRequests,
 		Message:	"Rate limit exceeded",
+	})
+}
+
+func (app *application) unchangedPasswordResponse(w http.ResponseWriter, r *http.Request) {
+	app.errorResponse(w, r, &data.ErrorPackage{
+		StatusCode:	http.StatusBadRequest,
+		Message:	"Password matches current password; please provide a new password",
 	})
 }

@@ -96,16 +96,19 @@ func (m UserModel) Insert(user *User) error {
 	ctx, cancel := context.WithTimeout(context.Background(), m.CFG.QueryTimeout)
 	defer cancel()
 
-	return m.DB.QueryRowContext(
-		ctx,
-		query,
-		args...,
-	).Scan(
-		&user.ID,
-		&user.CreatedAt,
-		&user.UpdatedAt,
-		&user.Version,
+	return MapError(m.DB.QueryRowContext(
+			ctx,
+			query,
+			args...,
+		).Scan(
+			&user.ID,
+			&user.CreatedAt,
+			&user.UpdatedAt,
+			&user.Version,
+		),
+		ErrorMap{".*duplicate key.*": ErrDuplicateKey},
 	)
+
 }
 
 func (m UserModel) GetOne(id int64) (*User, error) {
@@ -124,6 +127,30 @@ func (m UserModel) GetOne(id int64) (*User, error) {
 
 	return &u, MapError(
 		m.DB.QueryRowContext(ctx, query, id).Scan(
+			&u.ID,
+			&u.CreatedAt,
+			&u.UpdatedAt,
+			&u.Name,
+			&u.Email,
+			&u.Version,
+		),
+		ErrorMap{sql.ErrNoRows: ErrRecordNotFound},
+	)
+}
+
+func (m UserModel) GetByEmail(email string) (*User, error) {
+	query := `
+		select id, created_at, updated_at, name, email, version
+		from users
+		where email = email
+	`
+	var u User
+
+	ctx, cancel := context.WithTimeout(context.Background(), m.CFG.QueryTimeout)
+	defer cancel()
+
+	return &u, MapError(
+		m.DB.QueryRowContext(ctx, query, email).Scan(
 			&u.ID,
 			&u.CreatedAt,
 			&u.UpdatedAt,
@@ -227,7 +254,10 @@ func (m UserModel) Update(user *User) error {
 
 	return MapError(
 		m.DB.QueryRow(query, args...).Scan(&user.Version),
-		ErrorMap{sql.ErrNoRows: ErrEditConflict},
+		ErrorMap{
+			sql.ErrNoRows: ErrEditConflict,
+			".*duplicate key.*": ErrDuplicateKey,
+		},
 	)
 }
 

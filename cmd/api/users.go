@@ -10,11 +10,12 @@ import (
 	"github.com/dusktreader/the-hunt/internal/validator"
 )
 
-func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request) {
+	// TODO: Can we use the partial struct here?
 	var input struct {
 		Name		string		`json:"name"`
-		URL			string		`json:"url"`
-		TechStack	[]string	`json:"tech_stack"`
+		Email		string		`json:"email"`
+		Password	string		`json:"password"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -23,19 +24,26 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	slog.Debug("Creating a new company", "input", input)
+	slog.Debug("Creating a new user", "input", input)
 
 	v := validator.New()
 
-	c := &data.Company{
+	u := &data.User{
 		Name:		input.Name,
-		URL:		input.URL,
-		TechStack:	input.TechStack,
+		Email:		input.Email,
+		Activated:	false,
 	}
 
-	slog.Debug("Validating new company")
+	pw, err := data.NewPassword(input.Password)
+	if err != nil {
+		app.serverErrorResponse(w, r, err, "Failed to hash password")
+		return
+	}
+	u.Password = *pw
 
-	c.Validate(v)
+	slog.Debug("Validating new user")
+
+	u.Validate(v)
 	if !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors())
 		return
@@ -43,13 +51,14 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 
 	slog.Debug("Inserting new company into database")
 
-	err = app.models.Company.Insert(c)
+	err = app.models.User.Insert(u)
 	if err != nil {
 		switch {
 			case errors.Is(err, data.ErrDuplicateKey):
+				// TODO: We probably don't want to use this to avoid user enumeration
 				app.duplicateKeyResponse(w, r)
 			default:
-				app.serverErrorResponse(w, r, err, "Couldn't add company")
+				app.serverErrorResponse(w, r, err, "Couldn't add user")
 		}
 		return
 	}
@@ -57,50 +66,50 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 	slog.Debug("Serializing response")
 
 	headers := make(http.Header)
-	headers.Set("Location", fmt.Sprintf("/v1/companies/%d", c.ID))
+	headers.Set("Location", fmt.Sprintf("/v1/users/%d", u.ID))
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope: 		data.Envelope{"company": c},
+		Envelope: 		data.Envelope{"user": u},
 		StatusCode:		http.StatusCreated,
 		Headers:		headers,
 	})
 	if err != nil {
-		app.serverErrorResponse(w, r, err, "Failed to serialize company data")
+		app.serverErrorResponse(w, r, err, "Failed to serialize user data")
 		return
 	}
 }
 
-func (app *application) readCompanyHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) readUserHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.parseIdParam(r)
 	if err != nil {
 		app.badIdResponse(w, r, err)
 		return
 	}
-	slog.Debug("Fetching company details", "id", id)
+	slog.Debug("Fetching user details", "id", id)
 
-	c, err := app.models.Company.GetOne(id)
+	u, err := app.models.User.GetOne(id)
 	if err != nil {
 		switch {
 			case errors.Is(err, data.ErrRecordNotFound):
 				app.notFoundResponse(w, r, id)
 			default:
-				app.serverErrorResponse(w, r, err, "Couldn't retrieve company")
+				app.serverErrorResponse(w, r, err, "Couldn't retrieve user")
 		}
 		return
 	}
-	slog.Debug("Retrieved company", "Company", *c)
+	slog.Debug("Retrieved user", "User", *u)
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope: 		data.Envelope{"company": c},
+		Envelope: 		data.Envelope{"user": u},
 		StatusCode:		http.StatusOK,
 	})
 	if err != nil {
-		app.serverErrorResponse(w, r, err, "Failed to serialize company data")
+		app.serverErrorResponse(w, r, err, "Failed to serialize user data")
 	}
 }
 
-func (app *application) readManyCompaniesHandler(w http.ResponseWriter, r *http.Request) {
-	slog.Debug("Fetching company list")
+func (app *application) readManyUsersHandler(w http.ResponseWriter, r *http.Request) {
+	slog.Debug("Fetching user list")
 
 	qs := r.URL.Query()
 	v := validator.New()
@@ -108,9 +117,8 @@ func (app *application) readManyCompaniesHandler(w http.ResponseWriter, r *http.
 		qs,
 		v,
 		data.FilterConstraints{
-			Search:		data.CompanySearchFields.Check,
-			Sort:		data.CompanySortFields.Check,
-			In:			data.CompanyInFields.Check,
+			Search:		data.UserSearchFields.Check,
+			Sort:		data.UserSortFields.Check,
 		},
 	)
 	if !v.Valid() {
@@ -120,34 +128,34 @@ func (app *application) readManyCompaniesHandler(w http.ResponseWriter, r *http.
 
 	slog.Debug("Retrieved filters", "filters", filters)
 
-	companies, metadata, err := app.models.Company.GetMany(filters)
+	users, metadata, err := app.models.User.GetMany(filters)
 	if err != nil {
-		app.serverErrorResponse(w, r, err, "Couldn't retrieve companies")
+		app.serverErrorResponse(w, r, err, "Couldn't retrieve users")
 	}
-	slog.Debug("Fetched companies", "metadata", metadata)
+	slog.Debug("Fetched users", "metadata", metadata)
 
 	err = app.writeJSON(w, &data.JSONResponse{
 		StatusCode:		http.StatusOK,
 		Envelope: 		data.Envelope{
-			"companies": companies,
-			"metadata": metadata,
+			"users":	users,
+			"metadata":	metadata,
 		},
 	})
 	if err != nil {
-		app.serverErrorResponse(w, r, err, "Failed to serialize company data")
+		app.serverErrorResponse(w, r, err, "Failed to serialize user data")
 	}
 }
 
-func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.parseIdParam(r)
 	if err != nil {
 		app.badIdResponse(w, r, err)
 		return
 	}
 
-	slog.Debug("Updating company", "id", id)
+	slog.Debug("Updating user", "id", id)
 
-	c, err := app.models.Company.GetOne(id)
+	u, err := app.models.User.GetOne(id)
 	if err != nil {
 		switch {
 			case errors.Is(err, data.ErrRecordNotFound):
@@ -157,12 +165,12 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 		}
 		return
 	}
-	slog.Debug("Retrieved company", "Company", *c)
+	slog.Debug("Retrieved user", "User", *u)
 
 	var input struct {
 		Name		string		`json:"name"`
-		URL			string		`json:"url"`
-		TechStack	[]string	`json:"tech_stack"`
+		Email		string		`json:"email"`
+		Password	string		`json:"password"`
 	}
 
 	err = app.readJSON(w, r, &input)
@@ -171,16 +179,27 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	slog.Debug("Updating company with request payload", "id", id, "input", input)
+	slog.Debug("Updating user with request payload", "id", id, "input", input)
 
-	c.Name = input.Name
-	c.URL = input.URL
-	c.TechStack = input.TechStack
+	u.Name = input.Name
+	u.Email = input.Email
 
-	slog.Debug("Validating updated company", "id", id, "company", c)
+
+	pw, err := data.NewPassword(input.Password)
+	if err != nil {
+		app.serverErrorResponse(w, r, err, "Failed to hash password")
+		return
+	}
+	if pw.Matches(input.Password) {
+		app.unauthorizedResponse(w, r)
+		return
+	}
+	u.Password = *pw
+
+	slog.Debug("Validating updated company", "id", id, "company", u)
 
 	v := validator.New()
-	c.Validate(v)
+	u.Validate(v)
 	if !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors())
 		return
@@ -188,7 +207,7 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 
 	slog.Debug("Updating company in database")
 
-	err = app.models.Company.Update(c)
+	err = app.models.Company.Update(u)
 	if err != nil {
 		switch {
 			case errors.Is(err, data.ErrEditConflict):
@@ -204,7 +223,7 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 	slog.Debug("Serializing response")
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope: 		data.Envelope{"company": c},
+		Envelope: 		data.Envelope{"company": u},
 		StatusCode:		http.StatusOK,
 	})
 	if err != nil {
