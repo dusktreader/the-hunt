@@ -24,6 +24,14 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPatch, "/v1/companies/:id", app.updatePartialCompanyHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/companies/:id", app.deleteCompanyHandler)
 
+	slog.Debug("Adding user routes")
+	router.HandlerFunc(http.MethodPost, "/v1/users", app.createUserHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/users", app.readManyUsersHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/users/:id", app.readUserHandler)
+	router.HandlerFunc(http.MethodPut, "/v1/users/:id", app.updateUserHandler)
+	router.HandlerFunc(http.MethodPatch, "/v1/users/:id", app.updatePartialUserHandler)
+	router.HandlerFunc(http.MethodDelete, "/v1/users/:id", app.deleteUserHandler)
+
 	return app.recoverPanic(
 		app.rateLimit(
 			router,

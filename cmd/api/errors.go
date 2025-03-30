@@ -124,3 +124,10 @@ func (app *application) unchangedPasswordResponse(w http.ResponseWriter, r *http
 		Message:	"Password matches current password; please provide a new password",
 	})
 }
+
+func (app *application) unauthorizedResponse(w http.ResponseWriter, r *http.Request) {
+	app.errorResponse(w, r, &data.ErrorPackage{
+		StatusCode:	http.StatusUnauthorized,
+		Message:	"Password doesn't match; please try again",
+	})
+}

@@ -1,0 +1,30 @@
+{{define "subject"}}Welcome to The Hunt!{{end}}
+
+{{define "plainBody"}}
+Hi {{.Name}},
+
+Thanks for signing up for The Hunt. We're excited to help you find that next gig!
+
+For future reference, your user ID number is {{.ID}}.
+
+Thanks,
+
+the.dusktreader
+{{end}}
+
+{{define "htmlBody"}}
+<html>
+  <head>
+      <meta name="viewport" content="width=device-width" />
+      <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  </head>
+
+  <body>
+      <p>Hi {{.Name}},</p>
+      <p>Thanks for signing up for The Hunt. We're excited to help you find that next gig!</p>
+      <p>For future reference, your user ID number is {{.ID}}.</p>
+      <p>Thanks,</p>
+      <p>the.dusktreader</p>
+  </body>
+</html>
+{{end}}

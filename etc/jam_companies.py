@@ -1,3 +1,4 @@
+#!/usr/bin/env -S uv run --script
 # /// script
 # dependencies = [
 #   "ipython",
@@ -26,10 +27,7 @@ for company in r.json()["companies"]:
     r.raise_for_status()
 
 for company in companies:
-    r = httpx.post(
-        "http://localhost:4000/v1/companies",
-        json=company,
-    )
+    r = httpx.post("http://localhost:4000/v1/companies", json=company)
     r.raise_for_status()
     logger.info(f"Created: {r.json()}")
 

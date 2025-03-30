@@ -33,6 +33,22 @@ func Close(msg string, flags ...interface{}) {
 	os.Exit(0)
 }
 
+func (app *application) background(fn func(...any) error, args ...any) {
+	app.waiter.Add(1)
+	go func() {
+		defer app.waiter.Done()
+		defer func() {
+			if err := recover(); err != nil {
+				slog.Error("Recovered from panic", "error", err)
+			}
+		}()
+
+		err := fn(args...)
+		if err != nil {
+			slog.Error("Background task failed", "error", err)
+		}
+	}()
+}
 
 func (app *application) logError(r *http.Request, er *data.ErrorPackage) {
 	var logMessage string

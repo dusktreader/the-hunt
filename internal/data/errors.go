@@ -12,7 +12,7 @@ var (
 	ErrEditConflict = errors.New("edit conflict")
 	ErrInvalidParam = errors.New("invalid query parameter")
 	ErrDuplicateKey = errors.New("duplicate key")
-	ErrUnknown = errors.New("duplicate key")
+	ErrUnknown = errors.New("unknown error")
 )
 
 type ErrorMapUnion interface {}

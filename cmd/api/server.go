@@ -34,7 +34,14 @@ func (app *application) serve() error {
 		ctx, cancel := context.WithTimeout(context.Background(), 30 * time.Second)
 		defer cancel()
 
-		shutdownError <- srv.Shutdown(ctx)
+		err := srv.Shutdown(ctx)
+		if err != nil {
+			shutdownError <- err
+		}
+
+		slog.Info("Completing background tasks")
+		app.waiter.Wait()
+		shutdownError <- nil
 	}()
 
 	slog.Info("Starting server", "Config", app.config)

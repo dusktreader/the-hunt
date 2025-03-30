@@ -84,13 +84,14 @@ func (m UserModel) GetVersion(id int64) (int64, error) {
 
 func (m UserModel) Insert(user *User) error {
 	query := `
-		insert into users (name, email)
-		values ($1, $2)
+		insert into users (name, email, password_hash, activated)
+		values ($1, $2, $3, false)
 		returning id, created_at, updated_at, version
 	`
 	args := []any{
 		user.Name,
 		user.Email,
+		user.Password.Hashed,
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), m.CFG.QueryTimeout)

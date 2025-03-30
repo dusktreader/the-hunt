@@ -11,6 +11,8 @@ services:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
+      maildev:
+        condition: service_started
     develop:
       watch:
         - action: sync+restart
@@ -53,6 +55,17 @@ services:
       GOOSE_DBSTRING: "postgres://compose-db-user:compose-db-pswd@db:5432/compose-db-name?sslmode=disable"
       GOOSE_MIGRATION_DIR: /migrations
     command: ["goose", "up"]
+
+  maildev:
+    image: djfarrelly/maildev
+    environment:
+      MAILDEV_INCOMING_USER: compose-mail-user
+      MAILDEV_INCOMING_PASS: compose-mail-pswd
+      MAILDEV_OUTGOING_USER: compose-mail-user
+      MAILDEV_OUTGOING_PASS: compose-mail-pswd
+    restart: always
+    ports:
+      - 1080:80
 
 volumes:
   pg_data:
