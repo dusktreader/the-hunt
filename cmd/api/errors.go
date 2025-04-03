@@ -131,3 +131,10 @@ func (app *application) unauthorizedResponse(w http.ResponseWriter, r *http.Requ
 		Message:	"Password doesn't match; please try again",
 	})
 }
+
+func (app *application) invalidTokenResponse(w http.ResponseWriter, r *http.Request) {
+	app.errorResponse(w, r, &data.ErrorPackage{
+		StatusCode:	http.StatusUnauthorized,
+		Message:	"Invalid token; please request new activation token",
+	})
+}

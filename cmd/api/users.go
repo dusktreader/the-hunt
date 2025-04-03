@@ -49,7 +49,7 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	slog.Debug("Inserting new company into database")
+	slog.Debug("Inserting new user into database")
 
 	err = app.models.User.Insert(u)
 	if err != nil {
@@ -64,8 +64,20 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	t, err := app.models.Token.New(u.ID, app.config.ActivationTTL, "activation")
+	if err != nil {
+		slog.Debug("Got an error on token insert", "err", err)
+		app.serverErrorResponse(w, r, err, "Couldn't create activation token")
+		return
+	}
+
+	templateData := map[string]any{
+		"user":		u,
+		"token":	t,
+	}
+
 	slog.Debug("Starting mail sender go routine")
-	app.background(app.mailer.Send, u.Email, "user_welcome.tmpl", u)
+	app.background(app.mailer.Send, u.Email, "user_welcome.tmpl", templateData)
 
 	slog.Debug("Serializing response")
 
@@ -82,6 +94,50 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 }
+
+func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Plaintext	string		`json:"token"`
+	}
+
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		slog.Debug("Error reading JSON", "error", err)
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	slog.Debug("Activating a user", "token", input.Plaintext)
+
+	id, err := app.models.User.Activate(input.Plaintext)
+	if err != nil {
+		switch {
+			case errors.Is(err, data.ErrRecordNotFound):
+				app.invalidTokenResponse(w, r)
+			default:
+				app.serverErrorResponse(w, r, err, "Couldn't activate user")
+		}
+	}
+	slog.Debug("Activated user", "id", id)
+
+	slog.Debug("Starting token cleanup go routine")
+	app.background(app.models.User.DeleteTokensForUser, id, "activation")
+}
+
+func safeUnpack(from []any, to ...*any) error {
+	if len(from) != len(to) {
+		return fmt.Errorf("Args count didn't match. From count %d, to count %d", len(from), len(to))
+	}
+	for i, v := range from {
+		*to[i] = v
+	}
+	return nil
+}
+
+func (app *application) cleanupActivations(args ...any) {
+	(userID, scope) := safe
+
+
 
 func (app *application) readUserHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := app.parseIdParam(r)

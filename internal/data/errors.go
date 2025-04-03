@@ -9,6 +9,7 @@ import (
 
 var (
 	ErrRecordNotFound = errors.New("record not found")
+	ErrNoTokenMatch = errors.New("no valid token")
 	ErrEditConflict = errors.New("edit conflict")
 	ErrInvalidParam = errors.New("invalid query parameter")
 	ErrDuplicateKey = errors.New("duplicate key")

@@ -1,11 +1,17 @@
 {{define "subject"}}Welcome to The Hunt!{{end}}
 
 {{define "plainBody"}}
-Hi {{.Name}},
+Hi {{.user.Name}},
 
 Thanks for signing up for The Hunt. We're excited to help you find that next gig!
 
-For future reference, your user ID number is {{.ID}}.
+For future reference, your user ID number is {{.user.ID}}.
+
+To activate your account, please submit a POST request to /v1/users/activate with the following body:
+
+'{"token": "{{.token.Plaintext}}"}'
+
+Please note that this is a one-time use token and will expire at {{.token.ExpiresAt}}
 
 Thanks,
 
@@ -20,9 +26,17 @@ the.dusktreader
   </head>
 
   <body>
-      <p>Hi {{.Name}},</p>
+      <p>Hi {{.user.Name}},</p>
       <p>Thanks for signing up for The Hunt. We're excited to help you find that next gig!</p>
-      <p>For future reference, your user ID number is {{.ID}}.</p>
+      <p>For future reference, your user ID number is {{.user.ID}}.</p>
+      <p></p>
+      <p>To activate your account, please submit a POST request to /v1/users/activate with the following body:</p>
+      <pre><code>
+        {"token": "{{.token.Plaintext}}"}
+      </code></pre>
+      <p></p>
+      <p>Please note that this is a one-time use token and will expire at {{.token.ExpiresAt}}</p>
+      <p></p>
       <p>Thanks,</p>
       <p>the.dusktreader</p>
   </body>

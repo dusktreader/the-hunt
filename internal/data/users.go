@@ -166,7 +166,15 @@ func (m UserModel) GetByEmail(email string) (*User, error) {
 func (m UserModel) GetMany(f Filters) ([]*User, *ListMetadata, error) {
 	args := []any{}
 	query_parts := []string{`
-		select count(*) over (), id, created_at, updated_at, name, email, version
+		select
+			count(*) over (),
+			id,
+			created_at,
+			updated_at,
+			name,
+			email,
+			activated,
+			version
 		from users
 	`}
 
@@ -224,6 +232,7 @@ func (m UserModel) GetMany(f Filters) ([]*User, *ListMetadata, error) {
 			&u.UpdatedAt,
 			&u.Name,
 			&u.Email,
+			&u.Activated,
 			&u.Version,
 		)
 		if err != nil {
@@ -260,6 +269,46 @@ func (m UserModel) Update(user *User) error {
 			".*duplicate key.*": ErrDuplicateKey,
 		},
 	)
+}
+
+func (m UserModel) Activate(plaintext string) (int64, error) {
+	query := `
+		update users
+		set activated = true
+		from tokens
+		where
+			id = tokens.user_id
+			and tokens.scope = 'activation'
+			and tokens.hash = $1
+			and tokens.expires_at > now()
+		returning
+			id, activated
+	`
+
+	var id int64
+
+	ctx, cancel := context.WithTimeout(context.Background(), m.CFG.QueryTimeout)
+	defer cancel()
+
+	// TODO: create a background task to delete all activation tokens for the user
+	return id, MapError(
+		m.DB.QueryRowContext(ctx, query, Hash(plaintext)).Scan(&id),
+		ErrorMap{ sql.ErrNoRows: ErrNoTokenMatch },
+	)
+}
+
+func (m UserModel) DeleteTokensForUser(userID int64, scope string) error {
+	query := `
+		delete from tokens
+		where user_id = $1
+		and scope = $2
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), m.CFG.QueryTimeout)
+	defer cancel()
+
+	_, err := m.DB.ExecContext(ctx, query, userID)
+	return err
 }
 
 func (m UserModel) PartialUpdate(

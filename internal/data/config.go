@@ -36,4 +36,6 @@ type Config struct {
 
 	ClientCleanupInterval	time.Duration	`env:"CLIENT_CLEANUP_INTERVAL" envDefault:"1m"`
 	ClientCleanupTimeout	time.Duration	`env:"CLIENT_CLEANUP_TIMEOUT"  envDefault:"3m"`
+
+	ActivationTTL	time.Duration `env:"ACTIVATION_TTL" envDefault:"72h"`
 }
