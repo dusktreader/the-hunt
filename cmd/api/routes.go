@@ -54,7 +54,7 @@ func (app *application) routes() http.Handler {
 	}
 
 	if app.config.APIEnv.IsDev() {
-		router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
+		router.Handler(http.MethodGet, "/metrics", expvar.Handler())
 	}
 
 	return chainMiddleware(

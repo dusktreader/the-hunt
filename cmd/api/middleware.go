@@ -225,7 +225,7 @@ func (app *application) enableCORS(next http.Handler) http.Handler {
 }
 
 func (app *application) metrics(next http.Handler) http.Handler {
-	stats := types.RequestStats{}
+	stats := types.NewRequestStats()
 	expvar.Publish("request_stats", expvar.Func(func() any {
 		return stats
 	}))
@@ -234,13 +234,12 @@ func (app *application) metrics(next http.Handler) http.Handler {
 		slog.Debug("Adding request metrics")
 
 		start := time.Now()
-		stats.TotalRequests += 1
+		stats.AddRequest()
 
-		next.ServeHTTP(w, r)
+		mw := newMetricsResponseWriter(w)
+		next.ServeHTTP(mw, r)
 
-		stats.TotalResponses += 1
-
-		duration := time.Since(start).Microseconds()
-		stats.TotalProcTimeMu += duration
+		stats.AddResponse(mw.statusCode)
+		stats.AddTime(time.Since(start))
 	})
 }

@@ -13,21 +13,8 @@ import (
 	"github.com/dusktreader/the-hunt/internal/data"
 	"github.com/dusktreader/the-hunt/internal/logs"
 	"github.com/dusktreader/the-hunt/internal/mailer"
+	"github.com/dusktreader/the-hunt/internal/types"
 )
-
-const version = "0.1.0"
-
-type config struct {
-	port	int
-	env		string
-}
-
-type application struct {
-	config	data.Config
-	models	data.Models
-	mailer	*mailer.Mailer
-	waiter	*sync.WaitGroup
-}
 
 func main() {
 	// If the .env file is not found, we don't care. It's optional.
@@ -49,7 +36,7 @@ func main() {
 	MaybeDie(err)
 
 	if cfg.APIEnv.IsDev() {
-		expvar.NewString("version").Set(version)
+		expvar.NewString("version").Set(types.Version)
 		expvar.Publish("goroutines", expvar.Func(func() any {
 			return runtime.NumGoroutine()
 		}))

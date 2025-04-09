@@ -18,7 +18,7 @@ func (app *application) healthHandler(w http.ResponseWriter, r *http.Request) {
 	hr := healthResponse{
 		Status:			"available",
 		Environment: 	app.config.APIEnv,
-		Version:		version,
+		Version:		types.Version,
 	}
 
 	jr := &data.JSONResponse{
