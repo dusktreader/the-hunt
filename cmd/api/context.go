@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"net/http"
 	"log/slog"
+	"net/http"
 
 	"github.com/dusktreader/the-hunt/internal/types"
 )

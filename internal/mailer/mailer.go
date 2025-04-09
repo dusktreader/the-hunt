@@ -20,16 +20,16 @@ import (
 var templateFS embed.FS
 
 type Mailer struct {
-	client		*mail.Client
-	sender		string
-	retryCount	int
-	retryDelay	time.Duration
+	client     *mail.Client
+	sender     string
+	retryCount int
+	retryDelay time.Duration
 }
 
 func New(cfg data.Config) (*Mailer, error) {
 	mailOpts := []mail.Option{
 		mail.WithPort(cfg.MailPort),
-		mail.WithTimeout(5*time.Second),
+		mail.WithTimeout(5 * time.Second),
 	}
 	if !cfg.APIEnv.IsDev() {
 		mailOpts = append(
@@ -54,10 +54,10 @@ func New(cfg data.Config) (*Mailer, error) {
 	}
 
 	mailer := &Mailer{
-		client:		client,
-		sender:		cfg.MailSndr,
-		retryCount:	cfg.MailSendRetries,
-		retryDelay:	cfg.MailRetryDelay,
+		client:     client,
+		sender:     cfg.MailSndr,
+		retryCount: cfg.MailSendRetries,
+		retryDelay: cfg.MailRetryDelay,
 	}
 
 	return mailer, nil
@@ -77,7 +77,7 @@ func (m *Mailer) Send(args ...any) error {
 
 	data := args[2]
 
-	textTmpl, err := tt.New("").ParseFS(templateFS, "templates/" + templateFile)
+	textTmpl, err := tt.New("").ParseFS(templateFS, "templates/"+templateFile)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (m *Mailer) Send(args ...any) error {
 		return err
 	}
 
-	htmlTmpl, err := ht.New("").ParseFS(templateFS, "templates/" + templateFile)
+	htmlTmpl, err := ht.New("").ParseFS(templateFS, "templates/"+templateFile)
 	if err != nil {
 		return err
 	}

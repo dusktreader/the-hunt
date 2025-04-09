@@ -7,19 +7,19 @@ import (
 )
 
 type Company struct {
-	ID			int64		`json:"id"`
-	CreatedAt	time.Time	`json:"created_at"`
-	UpdatedAt	time.Time	`json:"updated_at"`
-	Name		string		`json:"name"`
-	URL			string		`json:"url,omitzero"`
-	TechStack   []string	`json:"tech_stack,omitempty"`
-	Version		int64		`json:"version"`
+	ID        int64     `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Name      string    `json:"name"`
+	URL       string    `json:"url,omitzero"`
+	TechStack []string  `json:"tech_stack,omitempty"`
+	Version   int64     `json:"version"`
 }
 
 type PartialCompany struct {
-	Name		*string		`json:"name"`
-	URL			*string		`json:"url"`
-	TechStack   []string	`json:"tech_stack"`
+	Name      *string  `json:"name"`
+	URL       *string  `json:"url"`
+	TechStack []string `json:"tech_stack"`
 }
 
 func (c *Company) Validate(v *validator.Validator) {

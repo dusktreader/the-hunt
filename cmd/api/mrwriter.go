@@ -5,15 +5,15 @@ import (
 )
 
 type metricsResponseWriter struct {
-	wrapped			http.ResponseWriter
-	statusCode		int
-	headerWritten	bool
+	wrapped       http.ResponseWriter
+	statusCode    int
+	headerWritten bool
 }
 
 func newMetricsResponseWriter(w http.ResponseWriter) *metricsResponseWriter {
 	return &metricsResponseWriter{
-		wrapped:	w,
-		statusCode:	http.StatusOK,
+		wrapped:    w,
+		statusCode: http.StatusOK,
 	}
 }
 

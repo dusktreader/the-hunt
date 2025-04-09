@@ -31,11 +31,11 @@ func (hp HashPW) Compare(pp PlainPW) error {
 	err := bcrypt.CompareHashAndPassword(hp, []byte(pp))
 	if err != nil {
 		switch {
-			case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
-				return ErrPasswordMismatch
-			default:
-				slog.Debug("Error comparing plaintext password to hash", "err", err)
-				return err
+		case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
+			return ErrPasswordMismatch
+		default:
+			slog.Debug("Error comparing plaintext password to hash", "err", err)
+			return err
 		}
 	}
 	return nil

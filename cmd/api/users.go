@@ -14,9 +14,9 @@ import (
 func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO: Can we use the partial struct here?
 	var input struct {
-		Name		string			`json:"name"`
-		Email		types.Email		`json:"email"`
-		Password	types.PlainPW	`json:"password"`
+		Name     string        `json:"name"`
+		Email    types.Email   `json:"email"`
+		Password types.PlainPW `json:"password"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -30,10 +30,10 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 	v := validator.New()
 
 	u := &types.User{
-		Name:			input.Name,
-		Email:			input.Email,
-		Activated:		false,
-		PlainPassword:	input.Password,
+		Name:          input.Name,
+		Email:         input.Email,
+		Activated:     false,
+		PlainPassword: input.Password,
 	}
 
 	slog.Debug("Validating new user")
@@ -57,11 +57,11 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		slog.Debug("Got an error on user insert", "err", err)
 		switch {
-			case errors.Is(err, types.ErrDuplicateKey):
-				// TODO: We probably don't want to use this to avoid user enumeration
-				app.duplicateKeyResponse(w, r)
-			default:
-				app.serverErrorResponse(w, r, err, "Couldn't add user")
+		case errors.Is(err, types.ErrDuplicateKey):
+			// TODO: We probably don't want to use this to avoid user enumeration
+			app.duplicateKeyResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err, "Couldn't add user")
 		}
 		return
 	}
@@ -81,8 +81,8 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	templateData := map[string]any{
-		"user":		u,
-		"token":	t,
+		"user":  u,
+		"token": t,
 	}
 
 	slog.Debug("Starting mail sender go routine")
@@ -95,9 +95,9 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 	headers.Set("Location", fmt.Sprintf("/v1/users/%d", u.ID))
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope: 		data.Envelope{"user": u},
-		StatusCode:		http.StatusAccepted,
-		Headers:		headers,
+		Envelope:   data.Envelope{"user": u},
+		StatusCode: http.StatusAccepted,
+		Headers:    headers,
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize user data")
@@ -131,10 +131,10 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 	t, err := app.models.Token.GetOne(input.PlainToken, types.ScopeActivation)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrRecordNotFound):
-				app.invalidTokenResponse(w, r, types.ScopeActivation)
-			default:
-				app.serverErrorResponse(w, r, err, "Couldn't parse activation token")
+		case errors.Is(err, types.ErrRecordNotFound):
+			app.invalidTokenResponse(w, r, types.ScopeActivation)
+		default:
+			app.serverErrorResponse(w, r, err, "Couldn't parse activation token")
 		}
 		return
 	}
@@ -143,10 +143,10 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 	id, err := app.models.User.Activate(*t)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrRecordNotFound):
-				app.invalidTokenResponse(w, r, types.ScopeActivation)
-			default:
-				app.serverErrorResponse(w, r, err, "Couldn't activate user")
+		case errors.Is(err, types.ErrRecordNotFound):
+			app.invalidTokenResponse(w, r, types.ScopeActivation)
+		default:
+			app.serverErrorResponse(w, r, err, "Couldn't activate user")
 		}
 		return
 	}
@@ -157,8 +157,8 @@ func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Reque
 	app.background(close)
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope: 		data.Envelope{"message": fmt.Sprintf("Activated user %d", id)},
-		StatusCode:		http.StatusOK,
+		Envelope:   data.Envelope{"message": fmt.Sprintf("Activated user %d", id)},
+		StatusCode: http.StatusOK,
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize response")
@@ -177,18 +177,18 @@ func (app *application) readUserHandler(w http.ResponseWriter, r *http.Request) 
 	u, err := app.models.User.GetOne(id)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrRecordNotFound):
-				app.notFoundResponse(w, r, id)
-			default:
-				app.serverErrorResponse(w, r, err, "Couldn't retrieve user")
+		case errors.Is(err, types.ErrRecordNotFound):
+			app.notFoundResponse(w, r, id)
+		default:
+			app.serverErrorResponse(w, r, err, "Couldn't retrieve user")
 		}
 		return
 	}
 	slog.Debug("Retrieved user", "User", *u)
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope: 		data.Envelope{"user": u},
-		StatusCode:		http.StatusOK,
+		Envelope:   data.Envelope{"user": u},
+		StatusCode: http.StatusOK,
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize user data")
@@ -204,8 +204,8 @@ func (app *application) readManyUsersHandler(w http.ResponseWriter, r *http.Requ
 		qs,
 		v,
 		data.FilterConstraints{
-			Search:		data.UserSearchFields.Check,
-			Sort:		data.UserSortFields.Check,
+			Search: data.UserSearchFields.Check,
+			Sort:   data.UserSortFields.Check,
 		},
 	)
 	if !v.Valid() {
@@ -222,10 +222,10 @@ func (app *application) readManyUsersHandler(w http.ResponseWriter, r *http.Requ
 	slog.Debug("Fetched users", "metadata", metadata)
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		StatusCode:		http.StatusOK,
-		Envelope: 		data.Envelope{
-			"users":	users,
-			"metadata":	metadata,
+		StatusCode: http.StatusOK,
+		Envelope: data.Envelope{
+			"users":    users,
+			"metadata": metadata,
 		},
 	})
 	if err != nil {
@@ -245,19 +245,19 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 	u, err := app.models.User.GetOne(id)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrRecordNotFound):
-				app.notFoundResponse(w, r, id)
-			default:
-				app.serverErrorResponse(w, r, err)
+		case errors.Is(err, types.ErrRecordNotFound):
+			app.notFoundResponse(w, r, id)
+		default:
+			app.serverErrorResponse(w, r, err)
 		}
 		return
 	}
 	slog.Debug("Retrieved user", "User", *u)
 
 	var input struct {
-		Name		string			`json:"name"`
-		Email		types.Email		`json:"email"`
-		Password	types.PlainPW	`json:"password"`
+		Name     string        `json:"name"`
+		Email    types.Email   `json:"email"`
+		Password types.PlainPW `json:"password"`
 	}
 
 	err = app.readJSON(w, r, &input)
@@ -270,7 +270,6 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 
 	u.Name = input.Name
 	u.Email = input.Email
-
 
 	slog.Debug("Validating updated company", "id", id, "company", u)
 
@@ -296,12 +295,12 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 	err = app.models.User.Update(u)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrEditConflict):
-				app.editConflictResponse(w, r)
-			case errors.Is(err, types.ErrDuplicateKey):
-				app.duplicateKeyResponse(w, r)
-			default:
-				app.serverErrorResponse(w, r, err, genericMessage)
+		case errors.Is(err, types.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		case errors.Is(err, types.ErrDuplicateKey):
+			app.duplicateKeyResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err, genericMessage)
 		}
 		return
 	}
@@ -309,8 +308,8 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 	slog.Debug("Serializing response")
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope: 		data.Envelope{"company": u},
-		StatusCode:		http.StatusOK,
+		Envelope:   data.Envelope{"company": u},
+		StatusCode: http.StatusOK,
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize user data")
@@ -330,10 +329,10 @@ func (app *application) updatePartialUserHandler(w http.ResponseWriter, r *http.
 	version, err := app.models.User.GetVersion(id)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrRecordNotFound):
-				app.notFoundResponse(w, r, id)
-			default:
-				app.serverErrorResponse(w, r, err)
+		case errors.Is(err, types.ErrRecordNotFound):
+			app.notFoundResponse(w, r, id)
+		default:
+			app.serverErrorResponse(w, r, err)
 		}
 		return
 	}
@@ -370,10 +369,10 @@ func (app *application) updatePartialUserHandler(w http.ResponseWriter, r *http.
 	c, err := app.models.User.PartialUpdate(id, version, &pu)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrEditConflict):
-				app.editConflictResponse(w, r)
-			default:
-				app.serverErrorResponse(w, r, err, "Couldn't update user")
+		case errors.Is(err, types.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err, "Couldn't update user")
 		}
 		return
 	}
@@ -381,8 +380,8 @@ func (app *application) updatePartialUserHandler(w http.ResponseWriter, r *http.
 	slog.Debug("Serializing response")
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope: 		data.Envelope{"user": c},
-		StatusCode:		http.StatusOK,
+		Envelope:   data.Envelope{"user": c},
+		StatusCode: http.StatusOK,
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize user data")
@@ -401,18 +400,18 @@ func (app *application) deleteUserHandler(w http.ResponseWriter, r *http.Request
 	err = app.models.User.Delete(id)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrRecordNotFound):
-				app.notFoundResponse(w, r, id)
-			default:
-				app.serverErrorResponse(w, r, err, "Couldn't delete user")
+		case errors.Is(err, types.ErrRecordNotFound):
+			app.notFoundResponse(w, r, id)
+		default:
+			app.serverErrorResponse(w, r, err, "Couldn't delete user")
 		}
 		return
 	}
 	slog.Debug("Deleted user", "id", id)
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope: 		data.Envelope{"message": "User deleted successfully"},
-		StatusCode:		http.StatusOK,
+		Envelope:   data.Envelope{"message": "User deleted successfully"},
+		StatusCode: http.StatusOK,
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize response")

@@ -13,9 +13,9 @@ import (
 
 func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Name		string		`json:"name"`
-		URL			string		`json:"url"`
-		TechStack	[]string	`json:"tech_stack"`
+		Name      string   `json:"name"`
+		URL       string   `json:"url"`
+		TechStack []string `json:"tech_stack"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -29,9 +29,9 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 	v := validator.New()
 
 	c := &types.Company{
-		Name:		input.Name,
-		URL:		input.URL,
-		TechStack:	input.TechStack,
+		Name:      input.Name,
+		URL:       input.URL,
+		TechStack: input.TechStack,
 	}
 
 	slog.Debug("Validating new company")
@@ -47,10 +47,10 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 	err = app.models.Company.Insert(c)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrDuplicateKey):
-				app.duplicateKeyResponse(w, r)
-			default:
-				app.serverErrorResponse(w, r, err, "Couldn't add company")
+		case errors.Is(err, types.ErrDuplicateKey):
+			app.duplicateKeyResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err, "Couldn't add company")
 		}
 		return
 	}
@@ -61,9 +61,9 @@ func (app *application) createCompanyHandler(w http.ResponseWriter, r *http.Requ
 	headers.Set("Location", fmt.Sprintf("/v1/companies/%d", c.ID))
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope: 		data.Envelope{"company": c},
-		StatusCode:		http.StatusCreated,
-		Headers:		headers,
+		Envelope:   data.Envelope{"company": c},
+		StatusCode: http.StatusCreated,
+		Headers:    headers,
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize company data")
@@ -82,18 +82,18 @@ func (app *application) readCompanyHandler(w http.ResponseWriter, r *http.Reques
 	c, err := app.models.Company.GetOne(id)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrRecordNotFound):
-				app.notFoundResponse(w, r, id)
-			default:
-				app.serverErrorResponse(w, r, err, "Couldn't retrieve company")
+		case errors.Is(err, types.ErrRecordNotFound):
+			app.notFoundResponse(w, r, id)
+		default:
+			app.serverErrorResponse(w, r, err, "Couldn't retrieve company")
 		}
 		return
 	}
 	slog.Debug("Retrieved company", "Company", *c)
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope: 		data.Envelope{"company": c},
-		StatusCode:		http.StatusOK,
+		Envelope:   data.Envelope{"company": c},
+		StatusCode: http.StatusOK,
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize company data")
@@ -109,9 +109,9 @@ func (app *application) readManyCompaniesHandler(w http.ResponseWriter, r *http.
 		qs,
 		v,
 		data.FilterConstraints{
-			Search:		data.CompanySearchFields.Check,
-			Sort:		data.CompanySortFields.Check,
-			In:			data.CompanyInFields.Check,
+			Search: data.CompanySearchFields.Check,
+			Sort:   data.CompanySortFields.Check,
+			In:     data.CompanyInFields.Check,
 		},
 	)
 	if !v.Valid() {
@@ -128,10 +128,10 @@ func (app *application) readManyCompaniesHandler(w http.ResponseWriter, r *http.
 	slog.Debug("Fetched companies", "metadata", metadata)
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		StatusCode:		http.StatusOK,
-		Envelope: 		data.Envelope{
+		StatusCode: http.StatusOK,
+		Envelope: data.Envelope{
 			"companies": companies,
-			"metadata": metadata,
+			"metadata":  metadata,
 		},
 	})
 	if err != nil {
@@ -151,19 +151,19 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 	c, err := app.models.Company.GetOne(id)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrRecordNotFound):
-				app.notFoundResponse(w, r, id)
-			default:
-				app.serverErrorResponse(w, r, err)
+		case errors.Is(err, types.ErrRecordNotFound):
+			app.notFoundResponse(w, r, id)
+		default:
+			app.serverErrorResponse(w, r, err)
 		}
 		return
 	}
 	slog.Debug("Retrieved company", "Company", *c)
 
 	var input struct {
-		Name		string		`json:"name"`
-		URL			string		`json:"url"`
-		TechStack	[]string	`json:"tech_stack"`
+		Name      string   `json:"name"`
+		URL       string   `json:"url"`
+		TechStack []string `json:"tech_stack"`
 	}
 
 	err = app.readJSON(w, r, &input)
@@ -192,12 +192,12 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 	err = app.models.Company.Update(c)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrEditConflict):
-				app.editConflictResponse(w, r)
-			case errors.Is(err, types.ErrDuplicateKey):
-				app.duplicateKeyResponse(w, r)
-			default:
-				app.serverErrorResponse(w, r, err, "Couldn't update company")
+		case errors.Is(err, types.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		case errors.Is(err, types.ErrDuplicateKey):
+			app.duplicateKeyResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err, "Couldn't update company")
 		}
 		return
 	}
@@ -205,8 +205,8 @@ func (app *application) updateCompanyHandler(w http.ResponseWriter, r *http.Requ
 	slog.Debug("Serializing response")
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope: 		data.Envelope{"company": c},
-		StatusCode:		http.StatusOK,
+		Envelope:   data.Envelope{"company": c},
+		StatusCode: http.StatusOK,
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize company data")
@@ -226,10 +226,10 @@ func (app *application) updatePartialCompanyHandler(w http.ResponseWriter, r *ht
 	version, err := app.models.Company.GetVersion(id)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrRecordNotFound):
-				app.notFoundResponse(w, r, id)
-			default:
-				app.serverErrorResponse(w, r, err)
+		case errors.Is(err, types.ErrRecordNotFound):
+			app.notFoundResponse(w, r, id)
+		default:
+			app.serverErrorResponse(w, r, err)
 		}
 		return
 	}
@@ -256,10 +256,10 @@ func (app *application) updatePartialCompanyHandler(w http.ResponseWriter, r *ht
 	c, err := app.models.Company.PartialUpdate(id, version, &pc)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrEditConflict):
-				app.editConflictResponse(w, r)
-			default:
-				app.serverErrorResponse(w, r, err, "Couldn't update company")
+		case errors.Is(err, types.ErrEditConflict):
+			app.editConflictResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err, "Couldn't update company")
 		}
 		return
 	}
@@ -267,8 +267,8 @@ func (app *application) updatePartialCompanyHandler(w http.ResponseWriter, r *ht
 	slog.Debug("Serializing response")
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope: 		data.Envelope{"company": c},
-		StatusCode:		http.StatusOK,
+		Envelope:   data.Envelope{"company": c},
+		StatusCode: http.StatusOK,
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize company data")
@@ -287,18 +287,18 @@ func (app *application) deleteCompanyHandler(w http.ResponseWriter, r *http.Requ
 	err = app.models.Company.Delete(id)
 	if err != nil {
 		switch {
-			case errors.Is(err, types.ErrRecordNotFound):
-				app.notFoundResponse(w, r, id)
-			default:
-				app.serverErrorResponse(w, r, err, "Couldn't delete company")
+		case errors.Is(err, types.ErrRecordNotFound):
+			app.notFoundResponse(w, r, id)
+		default:
+			app.serverErrorResponse(w, r, err, "Couldn't delete company")
 		}
 		return
 	}
 	slog.Debug("Deleted company", "id", id)
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope: 		data.Envelope{"message": "Company deleted successfully"},
-		StatusCode:		http.StatusOK,
+		Envelope:   data.Envelope{"message": "Company deleted successfully"},
+		StatusCode: http.StatusOK,
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize response")

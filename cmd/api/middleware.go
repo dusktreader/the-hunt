@@ -35,10 +35,10 @@ func (app *application) recoverPanic(next http.Handler) http.Handler {
 			if err := recover(); err != nil {
 				w.Header().Set("Connection", "close")
 				app.errorResponse(w, r, &data.ErrorPackage{
-					Error:		fmt.Errorf("%+v", err),
-					Message:	"An unexpected error occurred",
-					LogMessage:	"PANIC RECOVER",
-					StatusCode:	http.StatusInternalServerError,
+					Error:      fmt.Errorf("%+v", err),
+					Message:    "An unexpected error occurred",
+					LogMessage: "PANIC RECOVER",
+					StatusCode: http.StatusInternalServerError,
 				})
 			}
 		}()
@@ -52,7 +52,7 @@ func (app *application) rateLimit(next http.Handler) http.Handler {
 		return next
 	}
 
-	clients	:= data.NewClientMap(app.config)
+	clients := data.NewClientMap(app.config)
 	go clients.CleanCycle()
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -105,10 +105,10 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 		t, err := app.models.Token.GetOne(plainToken, types.ScopeAuthentication)
 		if err != nil {
 			switch {
-				case errors.Is(err, types.ErrRecordNotFound):
-					app.invalidTokenResponse(w, r, types.ScopeAuthentication)
-				default:
-					app.serverErrorResponse(w, r, err, "Couldn't parse authentication token")
+			case errors.Is(err, types.ErrRecordNotFound):
+				app.invalidTokenResponse(w, r, types.ScopeAuthentication)
+			default:
+				app.serverErrorResponse(w, r, err, "Couldn't parse authentication token")
 			}
 			return
 		}
@@ -121,10 +121,10 @@ func (app *application) authenticate(next http.Handler) http.Handler {
 			u, err := app.models.User.GetOne(t.UserID)
 			if err != nil {
 				switch {
-					case errors.Is(err, types.ErrRecordNotFound):
-						app.notFoundResponse(w, r, t.UserID)
-					default:
-						app.serverErrorResponse(w, r, err, "Couldn't find user for token")
+				case errors.Is(err, types.ErrRecordNotFound):
+					app.notFoundResponse(w, r, t.UserID)
+				default:
+					app.serverErrorResponse(w, r, err, "Couldn't find user for token")
 				}
 				return
 			}

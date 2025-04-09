@@ -12,7 +12,7 @@ import (
 )
 
 type UserModel struct {
-	DB *sql.DB
+	DB  *sql.DB
 	CFG ModelConfig
 }
 
@@ -52,15 +52,15 @@ func (m UserModel) Insert(user *types.User) error {
 	defer cancel()
 
 	return types.MapError(m.DB.QueryRowContext(
-			ctx,
-			query,
-			args...,
-		).Scan(
-			&user.ID,
-			&user.CreatedAt,
-			&user.UpdatedAt,
-			&user.Version,
-		),
+		ctx,
+		query,
+		args...,
+	).Scan(
+		&user.ID,
+		&user.CreatedAt,
+		&user.UpdatedAt,
+		&user.Version,
+	),
 		types.ErrorMap{".*duplicate key.*": types.ErrDuplicateKey},
 	)
 
@@ -116,7 +116,7 @@ func (m UserModel) GetForLogin(l *types.Login) (*types.User, error) {
 		&u.HashedPassword,
 	)
 	if err != nil {
-		return nil, types.MapError(err, types.ErrorMap{ sql.ErrNoRows: types.ErrRecordNotFound })
+		return nil, types.MapError(err, types.ErrorMap{sql.ErrNoRows: types.ErrRecordNotFound})
 	}
 
 	if !u.Activated {
@@ -200,8 +200,8 @@ func (m UserModel) GetMany(f Filters) ([]*types.User, *ListMetadata, error) {
 	}
 
 	if f.Page != nil && f.PageSize != nil {
-		args = append(args, *f.PageSize, (*f.Page - 1) * *f.PageSize)
-		query_parts = append(query_parts, fmt.Sprintf("limit $%d offset $%d", len(args) - 1, len(args)))
+		args = append(args, *f.PageSize, (*f.Page-1)**f.PageSize)
+		query_parts = append(query_parts, fmt.Sprintf("limit $%d offset $%d", len(args)-1, len(args)))
 	}
 
 	query := strings.Join(query_parts, " ")
@@ -261,7 +261,7 @@ func (m UserModel) Update(user *types.User) error {
 	return types.MapError(
 		m.DB.QueryRow(query, args...).Scan(&user.Version),
 		types.ErrorMap{
-			sql.ErrNoRows: types.ErrEditConflict,
+			sql.ErrNoRows:       types.ErrEditConflict,
 			".*duplicate key.*": types.ErrDuplicateKey,
 		},
 	)
@@ -288,7 +288,7 @@ func (m UserModel) Activate(token types.Token) (int64, error) {
 			query,
 			token.UserID,
 		).Scan(&id),
-		types.ErrorMap{ sql.ErrNoRows: types.ErrNoTokenMatch },
+		types.ErrorMap{sql.ErrNoRows: types.ErrNoTokenMatch},
 	)
 }
 

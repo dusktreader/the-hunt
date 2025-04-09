@@ -7,10 +7,10 @@ import (
 type PermCode string
 
 const (
-	CompanyRead		PermCode = "companies:read"
-	CompanyWrite	PermCode = "companies:write"
-	UserRead		PermCode = "users:read"
-	UserWrite		PermCode = "users:write"
+	CompanyRead  PermCode = "companies:read"
+	CompanyWrite PermCode = "companies:write"
+	UserRead     PermCode = "users:read"
+	UserWrite    PermCode = "users:write"
 )
 
 type PermissionSet = set.Set[PermCode]
@@ -29,5 +29,6 @@ func HasPerms(ps *PermissionSet, strategy PermissionStrategy, perms ...PermCode)
 }
 
 type PermissionStrategy string
+
 const All PermissionStrategy = "all"
 const Some PermissionStrategy = "some"

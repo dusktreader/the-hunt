@@ -9,8 +9,8 @@ import (
 )
 
 type respCounter struct {
-	cMap	map[string]int64
-	lock	sync.RWMutex
+	cMap map[string]int64
+	lock sync.RWMutex
 }
 
 func newRespCounter() *respCounter {
@@ -23,7 +23,7 @@ func (rc *respCounter) Incr(statusCode int) {
 	rc.lock.Lock()
 	defer rc.lock.Unlock()
 	key := fmt.Sprintf("%s (%d)", http.StatusText(statusCode), statusCode)
-	val, ok :=rc.cMap[key]
+	val, ok := rc.cMap[key]
 	if !ok {
 		rc.cMap[key] = 1
 	} else {
@@ -38,11 +38,11 @@ func (rc *respCounter) MarshalJSON() ([]byte, error) {
 }
 
 type RequestStats struct {
-	RequestCount			int64				`json:"total_requests"`
-	ResponseCount 	 		int64				`json:"total_responses"`
-	ProcTimeMu	 			int64				`json:"total_proc_time_μs"`
+	RequestCount  int64 `json:"total_requests"`
+	ResponseCount int64 `json:"total_responses"`
+	ProcTimeMu    int64 `json:"total_proc_time_μs"`
 
-	ResponseCountByStatus	*respCounter		`json:"total_responses_by_status"`
+	ResponseCountByStatus *respCounter `json:"total_responses_by_status"`
 }
 
 func NewRequestStats() *RequestStats {

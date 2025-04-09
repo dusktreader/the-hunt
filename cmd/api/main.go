@@ -2,6 +2,8 @@ package main
 
 import (
 	"expvar"
+	"flag"
+	"fmt"
 	"log/slog"
 	"runtime"
 	"sync"
@@ -13,10 +15,16 @@ import (
 	"github.com/dusktreader/the-hunt/internal/data"
 	"github.com/dusktreader/the-hunt/internal/logs"
 	"github.com/dusktreader/the-hunt/internal/mailer"
-	"github.com/dusktreader/the-hunt/internal/types"
 )
 
 func main() {
+	showVer := flag.Bool("version", false, "Display version and exit")
+	flag.Parse()
+	if *showVer {
+		fmt.Println(Version())
+		Close()
+	}
+
 	// If the .env file is not found, we don't care. It's optional.
 	_ = godotenv.Load()
 	var cfg data.Config
@@ -36,7 +44,7 @@ func main() {
 	MaybeDie(err)
 
 	if cfg.APIEnv.IsDev() {
-		expvar.NewString("version").Set(types.Version)
+		expvar.NewString("version").Set(Version())
 		expvar.Publish("goroutines", expvar.Func(func() any {
 			return runtime.NumGoroutine()
 		}))

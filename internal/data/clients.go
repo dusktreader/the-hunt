@@ -8,29 +8,28 @@ import (
 	"golang.org/x/time/rate"
 )
 
-
 type Client struct {
-	Limiter		*rate.Limiter
-	LastSeen	time.Time
+	Limiter  *rate.Limiter
+	LastSeen time.Time
 }
 
 type ClientMap struct {
-	ClientMap		map[string]*Client
-	LimitRPS		rate.Limit
-	LimitBurst		int
-	CleanupInterval	time.Duration
-	CleanupTimeout	time.Duration
-	Mutex			*sync.Mutex
+	ClientMap       map[string]*Client
+	LimitRPS        rate.Limit
+	LimitBurst      int
+	CleanupInterval time.Duration
+	CleanupTimeout  time.Duration
+	Mutex           *sync.Mutex
 }
 
 func NewClientMap(cfg Config) *ClientMap {
 	return &ClientMap{
-		ClientMap:			make(map[string]*Client),
-		LimitRPS:			cfg.LimitRPS,
-		LimitBurst:			cfg.LimitBurst,
-		CleanupInterval:	cfg.ClientCleanupInterval,
-		CleanupTimeout:		cfg.ClientCleanupInterval,
-		Mutex:				&sync.Mutex{},
+		ClientMap:       make(map[string]*Client),
+		LimitRPS:        cfg.LimitRPS,
+		LimitBurst:      cfg.LimitBurst,
+		CleanupInterval: cfg.ClientCleanupInterval,
+		CleanupTimeout:  cfg.ClientCleanupInterval,
+		Mutex:           &sync.Mutex{},
 	}
 }
 

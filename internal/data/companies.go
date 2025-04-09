@@ -14,7 +14,7 @@ import (
 )
 
 type CompanyModel struct {
-	DB *sql.DB
+	DB  *sql.DB
 	CFG ModelConfig
 }
 
@@ -120,7 +120,6 @@ func (m CompanyModel) GetMany(f Filters) ([]*types.Company, *ListMetadata, error
 		query_parts = append(query_parts, "where", strings.Join(where_parts, " and "))
 	}
 
-
 	sort_parts := []string{}
 
 	if f.Sort != nil {
@@ -134,8 +133,8 @@ func (m CompanyModel) GetMany(f Filters) ([]*types.Company, *ListMetadata, error
 	}
 
 	if f.Page != nil && f.PageSize != nil {
-		args = append(args, *f.PageSize, (*f.Page - 1) * *f.PageSize)
-		query_parts = append(query_parts, fmt.Sprintf("limit $%d offset $%d", len(args) - 1, len(args)))
+		args = append(args, *f.PageSize, (*f.Page-1)**f.PageSize)
+		query_parts = append(query_parts, fmt.Sprintf("limit $%d offset $%d", len(args)-1, len(args)))
 	}
 
 	query := strings.Join(query_parts, " ")
@@ -196,7 +195,7 @@ func (m CompanyModel) Update(company *types.Company) error {
 	return types.MapError(
 		m.DB.QueryRow(query, args...).Scan(&company.Version),
 		types.ErrorMap{
-			sql.ErrNoRows: types.ErrEditConflict,
+			sql.ErrNoRows:       types.ErrEditConflict,
 			".*duplicate key.*": types.ErrDuplicateKey,
 		},
 	)

@@ -10,9 +10,9 @@ import (
 )
 
 type Route struct {
-	method	string
-	path	string
-	handler	http.HandlerFunc
+	method  string
+	path    string
+	handler http.HandlerFunc
 }
 
 type RouteList []Route
@@ -27,25 +27,24 @@ func (app *application) routes() http.Handler {
 	perms := app.requirePermissions
 
 	routes := RouteList{
-		{http.MethodGet,		"/health",				app.healthHandler},
+		{http.MethodGet, "/health", app.healthHandler},
 
-		{http.MethodPost,		"/v1/companies",		perms(app.createCompanyHandler, types.All, types.CompanyWrite)},
-		{http.MethodGet,		"/v1/companies",		perms(app.readManyCompaniesHandler, types.All, types.CompanyRead)},
-		{http.MethodGet,		"/v1/companies/:id",	perms(app.readCompanyHandler, types.All, types.CompanyRead)},
-		{http.MethodPut,		"/v1/companies/:id",	perms(app.updateCompanyHandler, types.All, types.CompanyWrite)},
-		{http.MethodPatch,		"/v1/companies/:id",	perms(app.updatePartialCompanyHandler, types.All, types.CompanyWrite)},
-		{http.MethodDelete,		"/v1/companies/:id",	perms(app.deleteCompanyHandler, types.All, types.CompanyWrite)},
+		{http.MethodPost, "/v1/companies", perms(app.createCompanyHandler, types.All, types.CompanyWrite)},
+		{http.MethodGet, "/v1/companies", perms(app.readManyCompaniesHandler, types.All, types.CompanyRead)},
+		{http.MethodGet, "/v1/companies/:id", perms(app.readCompanyHandler, types.All, types.CompanyRead)},
+		{http.MethodPut, "/v1/companies/:id", perms(app.updateCompanyHandler, types.All, types.CompanyWrite)},
+		{http.MethodPatch, "/v1/companies/:id", perms(app.updatePartialCompanyHandler, types.All, types.CompanyWrite)},
+		{http.MethodDelete, "/v1/companies/:id", perms(app.deleteCompanyHandler, types.All, types.CompanyWrite)},
 
-		{http.MethodPost,		"/v1/users",			perms(app.createUserHandler, types.All, types.UserWrite)},
-		{http.MethodGet,		"/v1/users",			perms(app.readManyUsersHandler, types.All, types.UserRead)},
-		{http.MethodGet,		"/v1/users/:id",		perms(app.readUserHandler, types.All, types.UserRead)},
-		{http.MethodPut,		"/v1/users/:id",		perms(app.updateUserHandler, types.All, types.UserWrite)},
-		{http.MethodPatch,		"/v1/users/:id",		perms(app.updatePartialUserHandler, types.All, types.UserWrite)},
-		{http.MethodDelete,		"/v1/users/:id",		perms(app.deleteUserHandler, types.All, types.UserWrite)},
-		{http.MethodPost,		"/v1/users/activate",	app.activateUserHandler},
+		{http.MethodPost, "/v1/users", perms(app.createUserHandler, types.All, types.UserWrite)},
+		{http.MethodGet, "/v1/users", perms(app.readManyUsersHandler, types.All, types.UserRead)},
+		{http.MethodGet, "/v1/users/:id", perms(app.readUserHandler, types.All, types.UserRead)},
+		{http.MethodPut, "/v1/users/:id", perms(app.updateUserHandler, types.All, types.UserWrite)},
+		{http.MethodPatch, "/v1/users/:id", perms(app.updatePartialUserHandler, types.All, types.UserWrite)},
+		{http.MethodDelete, "/v1/users/:id", perms(app.deleteUserHandler, types.All, types.UserWrite)},
+		{http.MethodPost, "/v1/users/activate", app.activateUserHandler},
 
-		{http.MethodPost,		"/v1/login",			app.loginHandler},
-
+		{http.MethodPost, "/v1/login", app.loginHandler},
 	}
 
 	slog.Debug("Adding routes")

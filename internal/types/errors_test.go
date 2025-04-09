@@ -21,29 +21,29 @@ func TestMapError(t *testing.T) {
 	}
 
 	cases := []struct {
-		name	string
-		err		error
-		wantErr	error
+		name    string
+		err     error
+		wantErr error
 	}{
 		{
-			name:		"jawa mapped to ewok",
-			err:		ErrTestJawa,
-			wantErr:	ErrTestEwok,
+			name:    "jawa mapped to ewok",
+			err:     ErrTestJawa,
+			wantErr: ErrTestEwok,
 		},
 		{
-			name:		"hutt not mapped",
-			err:		ErrTestHutt,
-			wantErr:	ErrTestHutt,
+			name:    "hutt not mapped",
+			err:     ErrTestHutt,
+			wantErr: ErrTestHutt,
 		},
 		{
-			name:		"pyke mapped to hutt",
-			err:		ErrTestPyke,
-			wantErr:	ErrTestHutt,
+			name:    "pyke mapped to hutt",
+			err:     ErrTestPyke,
+			wantErr: ErrTestHutt,
 		},
 		{
-			name:		"nil argument",
-			err:		nil,
-			wantErr:	nil,
+			name:    "nil argument",
+			err:     nil,
+			wantErr: nil,
 		},
 	}
 	for _, c := range cases {
@@ -52,4 +52,14 @@ func TestMapError(t *testing.T) {
 			t.Errorf("%s: expected %v for %v, got %v", c.name, c.wantErr, c.err, gotErr)
 		}
 	}
+
+	defer func() {
+		if r := recover(); r == nil {
+			t.Errorf("Did not panic on invalid type in error map!")
+		}
+	}()
+	badMap := types.ErrorMap{
+		13: ErrTestJawa,
+	}
+	types.MapError(ErrTestHutt, badMap)
 }

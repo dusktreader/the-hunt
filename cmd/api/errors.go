@@ -10,7 +10,6 @@ import (
 	"github.com/dusktreader/the-hunt/internal/types"
 )
 
-
 func (app *application) errorResponse(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -18,8 +17,8 @@ func (app *application) errorResponse(
 ) {
 	app.logError(r, ep)
 	err := app.writeJSON(w, &data.JSONResponse{
-		Envelope:		data.Envelope{"error": ep},
-		StatusCode:		ep.StatusCode,
+		Envelope:   data.Envelope{"error": ep},
+		StatusCode: ep.StatusCode,
 	})
 	if err != nil {
 		slog.Error("Couldn't serialize error response", "error", err)
@@ -33,25 +32,25 @@ func (app *application) serverErrorResponse(w http.ResponseWriter, r *http.Reque
 		msg = message[0]
 	}
 	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusInternalServerError,
-		Message:	msg,
-		Error:		err,
+		StatusCode: http.StatusInternalServerError,
+		Message:    msg,
+		Error:      err,
 	})
 }
 
 func (app *application) badIdResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusBadRequest,
-		Message:	"Invalid ID provided",
-		Details:	err.Error(),
-		Error:		err,
+		StatusCode: http.StatusBadRequest,
+		Message:    "Invalid ID provided",
+		Details:    err.Error(),
+		Error:      err,
 	})
 }
 
 func (app *application) duplicateKeyResponse(w http.ResponseWriter, r *http.Request) {
 	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusBadRequest,
-		Message:	"Duplicate key provided",
+		StatusCode: http.StatusBadRequest,
+		Message:    "Duplicate key provided",
 	})
 }
 
@@ -62,32 +61,32 @@ func (app *application) notFoundResponse(w http.ResponseWriter, r *http.Request,
 	}
 
 	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusNotFound,
-		Message:	"Could not find the record you requested",
-		Details:	details,
+		StatusCode: http.StatusNotFound,
+		Message:    "Could not find the record you requested",
+		Details:    details,
 	})
 }
 
 func (app *application) routeNotFoundResponse(w http.ResponseWriter, r *http.Request) {
 	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusNotFound,
-		Message:	"Could not find the route you requested",
+		StatusCode: http.StatusNotFound,
+		Message:    "Could not find the route you requested",
 	})
 }
 
 func (app *application) notAllowedResponse(w http.ResponseWriter, r *http.Request) {
 	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusMethodNotAllowed,
-		Message:	"The requested method is not allowed for this resource",
+		StatusCode: http.StatusMethodNotAllowed,
+		Message:    "The requested method is not allowed for this resource",
 	})
 }
 
 func (app *application) badRequestResponse(w http.ResponseWriter, r *http.Request, err error) {
 	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusBadRequest,
-		Message:	"Invalid request payload",
-		Details:	err.Error(),
-		Error:		err,
+		StatusCode: http.StatusBadRequest,
+		Message:    "Invalid request payload",
+		Details:    err.Error(),
+		Error:      err,
 	})
 }
 
@@ -98,45 +97,45 @@ func (app *application) failedValidationResponse(w http.ResponseWriter, r *http.
 	}
 
 	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusUnprocessableEntity,
-		Message:	"Invalid request payload",
-		Details:	errors,
-		Error:		fmt.Errorf("%s", errBytes),
+		StatusCode: http.StatusUnprocessableEntity,
+		Message:    "Invalid request payload",
+		Details:    errors,
+		Error:      fmt.Errorf("%s", errBytes),
 	})
 }
 
 func (app *application) editConflictResponse(w http.ResponseWriter, r *http.Request) {
 	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusConflict,
-		Message:	"Unable to update the record due to an edit conflict. Please try again",
+		StatusCode: http.StatusConflict,
+		Message:    "Unable to update the record due to an edit conflict. Please try again",
 	})
 }
 
 func (app *application) rateLimitExceededResponse(w http.ResponseWriter, r *http.Request) {
 	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusTooManyRequests,
-		Message:	"Rate limit exceeded",
+		StatusCode: http.StatusTooManyRequests,
+		Message:    "Rate limit exceeded",
 	})
 }
 
 func (app *application) userNotActivatedResponse(w http.ResponseWriter, r *http.Request) {
 	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusUnauthorized,
-		Message:	"User is not activated yet. Please check your email for the activation link",
+		StatusCode: http.StatusUnauthorized,
+		Message:    "User is not activated yet. Please check your email for the activation link",
 	})
 }
 
 func (app *application) unauthorizedResponse(w http.ResponseWriter, r *http.Request) {
 	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusUnauthorized,
-		Message:	"Unauthorized. Please try logging in again",
+		StatusCode: http.StatusUnauthorized,
+		Message:    "Unauthorized. Please try logging in again",
 	})
 }
 
 func (app *application) forbiddenResponse(w http.ResponseWriter, r *http.Request) {
 	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusForbidden,
-		Message:	"Forbidden. Please check your permissions",
+		StatusCode: http.StatusForbidden,
+		Message:    "Forbidden. Please check your permissions",
 	})
 }
 
@@ -145,7 +144,7 @@ func (app *application) invalidTokenResponse(w http.ResponseWriter, r *http.Requ
 		w.Header().Set("WWW-Authenticate", "Bearer")
 	}
 	app.errorResponse(w, r, &data.ErrorPackage{
-		StatusCode:	http.StatusUnauthorized,
-		Message:	fmt.Sprintf("Invalid token; please request new %s token", scope),
+		StatusCode: http.StatusUnauthorized,
+		Message:    fmt.Sprintf("Invalid token; please request new %s token", scope),
 	})
 }

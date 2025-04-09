@@ -7,25 +7,26 @@ import (
 )
 
 type User struct {
-	ID				int64		`json:"id"`
-	CreatedAt		time.Time	`json:"created_at"`
-	UpdatedAt		time.Time	`json:"updated_at"`
-	Name			string		`json:"name"`
-	Email			Email		`json:"email"`
-	PlainPassword	PlainPW		`json:"-"`
-	HashedPassword	HashPW		`json:"-"`
-	Activated		bool		`json:"activated"`
-	Version			int64		`json:"version"`
+	ID             int64     `json:"id"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+	Name           string    `json:"name"`
+	Email          Email     `json:"email"`
+	PlainPassword  PlainPW   `json:"-"`
+	HashedPassword HashPW    `json:"-"`
+	Activated      bool      `json:"activated"`
+	Version        int64     `json:"version"`
 }
 
 type PartialUser struct {
-	Name			*string		`json:"name"`
-	Email			*Email		`json:"email"`
-	PlainPassword	*PlainPW	`json:"-"`
-	HashedPassword	*HashPW		`json:"-"`
+	Name           *string  `json:"name"`
+	Email          *Email   `json:"email"`
+	PlainPassword  *PlainPW `json:"-"`
+	HashedPassword *HashPW  `json:"-"`
 }
 
 var AnonymousUser = &User{}
+
 const AdminUserID = 0
 
 func (u *User) Validate(v *validator.Validator) {

@@ -10,7 +10,7 @@ import (
 )
 
 type PermissionModel struct {
-	DB *sql.DB
+	DB  *sql.DB
 	CFG ModelConfig
 }
 

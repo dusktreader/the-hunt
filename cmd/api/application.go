@@ -8,8 +8,8 @@ import (
 )
 
 type application struct {
-	config	data.Config
-	models	data.Models
-	mailer	*mailer.Mailer
-	waiter	*sync.WaitGroup
+	config data.Config
+	models data.Models
+	mailer *mailer.Mailer
+	waiter *sync.WaitGroup
 }

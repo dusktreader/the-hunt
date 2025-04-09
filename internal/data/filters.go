@@ -15,8 +15,10 @@ import (
 )
 
 type SortDir bool
+
 const SortAsc SortDir = true
 const SortDesc SortDir = false
+
 func (dir SortDir) String() string {
 	if dir == SortAsc {
 		return "asc"
@@ -119,6 +121,7 @@ func readInt(
 	return p
 }
 
+/* Keep this around if we need it, but not used ATM
 func readBool(
 	qs url.Values,
 	key string,
@@ -140,6 +143,7 @@ func readBool(
 	}
 	return p
 }
+*/
 
 const DefaultPage = 1
 const DefaultMaxPage = 1
@@ -147,11 +151,11 @@ const DefaultPageSize = 10
 const DefaultMaxPageSize = 10
 
 type Filters struct {
-	Search		*SearchMap
-	Sort		*SortMap
-	In			*InMap
-	Page		*int
-	PageSize	*int
+	Search   *SearchMap
+	Sort     *SortMap
+	In       *InMap
+	Page     *int
+	PageSize *int
 }
 
 func (f Filters) LogValue() slog.Value {
@@ -190,11 +194,11 @@ func DefaultPageSizeCheck(i int) bool {
 }
 
 type FilterConstraints struct {
-	Search		SearchCheck
-	Sort		SortCheck
-	In			InCheck
-	Page		PageCheck
-	PageSize	PageSizeCheck
+	Search   SearchCheck
+	Sort     SortCheck
+	In       InCheck
+	Page     PageCheck
+	PageSize PageSizeCheck
 }
 
 type SearchFields []string
@@ -202,36 +206,38 @@ type SortFields []string
 type InFields []string
 
 type SearchMatch struct {
-	_	struct{}	`^search_`
-	Key	string		`\w+`
-	_	struct{}	`$`
+	_   struct{} `regexp:"^search_"`
+	Key string   `regexp:"\\w+"`
+	_   struct{} `regexp:"$"`
 }
+
 var SearchRex = restructure.MustCompile(
 	SearchMatch{},
 	restructure.Options{},
 )
 
 type InMatch struct {
-	_	struct{}	`^in_`
-	Key	string		`\w+`
-	_	struct{}	`$`
+	_   struct{} `regexp:"^in_"`
+	Key string   `regexp:"\\w+"`
+	_   struct{} `regexp:"$"`
 }
+
 var InRex = restructure.MustCompile(
 	InMatch{},
 	restructure.Options{},
 )
 
 type SortMatch struct {
-	_	struct{}	`^`
-	Dir	string		`-?`
-	Key	string		`\w+`
-	_	struct{}	`$`
+	_   struct{} `regexp:"^"`
+	Dir string   `regexp:"-?"`
+	Key string   `regexp:"\\w+"`
+	_   struct{} `regexp:"$"`
 }
+
 var SortRex = restructure.MustCompile(
 	SortMatch{},
 	restructure.Options{},
 )
-
 
 func (searchFields SearchFields) Check(searchMap SearchMap) bool {
 	for key := range searchMap {
@@ -278,11 +284,11 @@ func ParseFilters(
 	c FilterConstraints,
 ) Filters {
 	f := Filters{
-		Search:		&SearchMap{},
-		In:			&InMap{},
-		Page:		readInt(qs, "page", v),
-		PageSize:	readInt(qs, "page_size", v),
-		Sort:		NewSortMap(),
+		Search:   &SearchMap{},
+		In:       &InMap{},
+		Page:     readInt(qs, "page", v),
+		PageSize: readInt(qs, "page_size", v),
+		Sort:     NewSortMap(),
 	}
 
 	var search SearchMatch
@@ -351,4 +357,3 @@ func ParseFilters(
 
 	return f
 }
-

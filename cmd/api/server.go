@@ -1,24 +1,24 @@
 package main
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
-	"time"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
-	"context"
-	"errors"
+	"time"
 )
 
 func (app *application) serve() error {
 	srv := &http.Server{
-		Addr:			fmt.Sprintf(":%d", app.config.APIPort),
-		Handler:		app.routes(),
-		IdleTimeout:	5 * time.Second, // These should probably be app settings
-		ReadTimeout:	10 * time.Second,
-		ErrorLog:		slog.NewLogLogger(slog.Default().Handler(), slog.LevelError),
+		Addr:        fmt.Sprintf(":%d", app.config.APIPort),
+		Handler:     app.routes(),
+		IdleTimeout: 5 * time.Second, // These should probably be app settings
+		ReadTimeout: 10 * time.Second,
+		ErrorLog:    slog.NewLogLogger(slog.Default().Handler(), slog.LevelError),
 	}
 
 	shutdownError := make(chan error)
@@ -31,7 +31,7 @@ func (app *application) serve() error {
 
 		slog.Info("Received signal", "signal", s)
 
-		ctx, cancel := context.WithTimeout(context.Background(), 30 * time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
 		err := srv.Shutdown(ctx)

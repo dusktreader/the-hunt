@@ -1,8 +1,8 @@
 package main
 
 import (
-    "log"
-    "net/http"
+	"log"
+	"net/http"
 )
 
 const html = `
@@ -42,10 +42,10 @@ const html = `
 
 func main() {
 
-    // Start a HTTP server listening on the given address, which responds to all
-    // requests with the webpage HTML above.
+	// Start a HTTP server listening on the given address, which responds to all
+	// requests with the webpage HTML above.
 	err := http.ListenAndServe(":9000", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        w.Write([]byte(html))
-    }))
-    log.Fatal(err)
+		w.Write([]byte(html))
+	}))
+	log.Fatal(err)
 }

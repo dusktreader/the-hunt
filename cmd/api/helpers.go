@@ -16,20 +16,24 @@ import (
 
 func MaybeDie(err error) {
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "There was an error:", err)
-		os.Exit(1)
+		Die("there was an error: %v", err)
 	}
 }
 
-func Die(msg string, flags ...interface{}) {
-	msg = fmt.Sprintf(msg, flags...)
-	fmt.Fprintln(os.Stderr, "Aborting:", msg)
+func errOut(prefix string, args ...any) {
+	if len(args) > 0 {
+		msg := fmt.Sprintf(prefix + " " + args[0].(string), args[1:]...)
+		fmt.Fprintln(os.Stderr, msg)
+	}
+}
+
+func Die(args ...any) {
+	errOut("Aborting", args...)
 	os.Exit(1)
 }
 
-func Close(msg string, flags ...interface{}) {
-	msg = fmt.Sprintf(msg, flags...)
-	fmt.Fprintln(os.Stderr, "Closing:", msg)
+func Close(args ...any) {
+	errOut("Closing", args...)
 	os.Exit(0)
 }
 
@@ -70,9 +74,9 @@ func (app *application) parseIdParam(r *http.Request) (int64, error) {
 	params := httprouter.ParamsFromContext(r.Context())
 	id, err := strconv.ParseInt(params.ByName("id"), 10, 64)
 	if err != nil {
-		return 0, fmt.Errorf("Int is required")
+		return 0, fmt.Errorf("int is required")
 	} else if id < 0 {
-		return 0, fmt.Errorf("Negative ids are not allowed")
+		return 0, fmt.Errorf("negative ids are not allowed")
 	} else if id == 0 {
 		return 0, fmt.Errorf("0 is not allowed")
 	}
@@ -88,7 +92,7 @@ func (app *application) writeJSON(w http.ResponseWriter, jr *data.JSONResponse) 
 		serialized, err = json.Marshal(jr.Envelope)
 	}
 	if err != nil {
-		return fmt.Errorf("Failed to serialize response data: %w", err)
+		return fmt.Errorf("failed to serialize response data: %w", err)
 	}
 	serialized = append(serialized, '\n')
 
@@ -118,43 +122,42 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst any
 
 		switch {
 			case errors.As(err, &syntaxError):
-				mappedErr = fmt.Errorf("Body contains badly-formed JSON (at character %d)", syntaxError.Offset)
+				mappedErr = fmt.Errorf("body contains badly-formed JSON (at character %d)", syntaxError.Offset)
 
 			case errors.Is(err, io.ErrUnexpectedEOF):
-				mappedErr = fmt.Errorf("Body contains badly-formed JSON")
+				mappedErr = fmt.Errorf("body contains badly-formed JSON")
 
 			case errors.As(err, &unmarshalTypeError):
 				if unmarshalTypeError.Field != "" {
-					mappedErr = fmt.Errorf("Body contains an incorrect JSON type for the %q field", unmarshalTypeError.Field)
+					mappedErr = fmt.Errorf("body contains an incorrect JSON type for the %q field", unmarshalTypeError.Field)
 				} else {
-					mappedErr = fmt.Errorf("Body contains an incorrect JSON type (at character %d)", unmarshalTypeError.Offset)
+					mappedErr = fmt.Errorf("body contains an incorrect JSON type (at character %d)", unmarshalTypeError.Offset)
 				}
 
 			case errors.Is(err, io.EOF):
-				mappedErr = fmt.Errorf("Body must not be empty")
+				mappedErr = fmt.Errorf("body must not be empty")
 
 			case errors.As(err, &invalidUnmarshalError):
 				panic(err)
 
 			default:
 				mappedErr = err
-
-			slog.Debug(
-				"There was an error reading JSON from the request",
-				"original_error",
-				err,
-				"mapped_error",
-				mappedErr,
-			)
-			return mappedErr
 		}
+		slog.Debug(
+			"There was an error reading JSON from the request",
+			"original_error",
+			err,
+			"mapped_error",
+			mappedErr,
+		)
+		return mappedErr
 	}
 	slog.Debug("Decoded JSON payload", "payload", dst)
 
 	err = dec.Decode(&struct{}{})
 	if !errors.Is(err, io.EOF) {
 		slog.Debug("The body contained multiple JSON values")
-		return fmt.Errorf("Body must only contain a single JSON value")
+		return fmt.Errorf("body must only contain a single JSON value")
 	}
 	return nil
 }

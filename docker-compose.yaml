@@ -7,7 +7,7 @@ services:
       ADMIN_EMAIL: admin@the-hunt.dev
       ADMIN_PASSWORD: admin
       CORS_TRUST_ORIGINS: "http://localhost:9000,http://localhost:9900"
-    command: ["go", "run", "./cmd/api"]
+    command: ["make", "run"]
     ports:
       - "4000:4000"
     depends_on:
@@ -102,6 +102,7 @@ services:
     restart: always
     ports:
       - 1080:80
+      - 1025:25
 
 volumes:
   pg_data:

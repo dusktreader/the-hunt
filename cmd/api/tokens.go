@@ -1,9 +1,9 @@
 package main
 
 import (
-	"net/http"
-	"log/slog"
 	"errors"
+	"log/slog"
+	"net/http"
 
 	"github.com/dusktreader/the-hunt/internal/data"
 	"github.com/dusktreader/the-hunt/internal/types"
@@ -12,8 +12,8 @@ import (
 
 func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Email			types.Email		`json:"email"`
-		PlainPassword	types.PlainPW	`json:"password"`
+		Email         types.Email   `json:"email"`
+		PlainPassword types.PlainPW `json:"password"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -49,12 +49,12 @@ func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			slog.Debug("Couldn't retrieve user", "email", l.Email, "error", err)
 			switch {
-				case errors.Is(err, types.ErrUserNotActivated):
-					app.userNotActivatedResponse(w, r)
-				case errors.Is(err, types.ErrUnauthorized):
-					app.unauthorizedResponse(w, r)
-				default:
-					app.serverErrorResponse(w, r, err, "Couldn't authenticate user")
+			case errors.Is(err, types.ErrUserNotActivated):
+				app.userNotActivatedResponse(w, r)
+			case errors.Is(err, types.ErrUnauthorized):
+				app.unauthorizedResponse(w, r)
+			default:
+				app.serverErrorResponse(w, r, err, "Couldn't authenticate user")
 			}
 			return
 		}
@@ -73,8 +73,8 @@ func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = app.writeJSON(w, &data.JSONResponse{
-		Envelope:	data.Envelope{"auth": token},
-		StatusCode:	http.StatusCreated,
+		Envelope:   data.Envelope{"auth": token},
+		StatusCode: http.StatusCreated,
 	})
 	if err != nil {
 		app.serverErrorResponse(w, r, err, "Failed to serialize data")

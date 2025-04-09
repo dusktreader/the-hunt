@@ -9,7 +9,7 @@ import (
 )
 
 type TokenModel struct {
-	DB *sql.DB
+	DB  *sql.DB
 	CFG ModelConfig
 }
 
