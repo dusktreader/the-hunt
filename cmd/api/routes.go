@@ -1,6 +1,7 @@
 package main
 
 import (
+	"expvar"
 	"log/slog"
 	"net/http"
 
@@ -44,6 +45,7 @@ func (app *application) routes() http.Handler {
 		{http.MethodPost,		"/v1/users/activate",	app.activateUserHandler},
 
 		{http.MethodPost,		"/v1/login",			app.loginHandler},
+
 	}
 
 	slog.Debug("Adding routes")
@@ -51,11 +53,16 @@ func (app *application) routes() http.Handler {
 		router.HandlerFunc(r.method, r.path, r.handler)
 	}
 
-	return app.recoverPanic(
-		app.rateLimit(
-			app.authenticate(
-				router,
-			),
-		),
+	if app.config.APIEnv.IsDev() {
+		router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
+	}
+
+	return chainMiddleware(
+		router,
+		app.recoverPanic,
+		app.metrics,
+		app.enableCORS,
+		app.rateLimit,
+		app.authenticate,
 	)
 }

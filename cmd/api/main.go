@@ -1,8 +1,11 @@
 package main
 
 import (
+	"expvar"
 	"log/slog"
+	"runtime"
 	"sync"
+	"time"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
@@ -44,6 +47,22 @@ func main() {
 
 	mailer, err := mailer.New(cfg)
 	MaybeDie(err)
+
+	if cfg.APIEnv.IsDev() {
+		expvar.NewString("version").Set(version)
+		expvar.Publish("goroutines", expvar.Func(func() any {
+			return runtime.NumGoroutine()
+		}))
+		expvar.Publish("database", expvar.Func(func() any {
+			return db.Stats()
+		}))
+		expvar.Publish("timestamp", expvar.Func(func() any {
+			return time.Now().Format(time.RFC3339)
+		}))
+		expvar.Publish("config", expvar.Func(func() any {
+			return cfg
+		}))
+	}
 
 	app := &application{
 		config: cfg,

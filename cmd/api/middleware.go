@@ -2,17 +2,32 @@ package main
 
 import (
 	"errors"
+	"expvar"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strings"
+	"time"
 
+	"github.com/hashicorp/go-set/v3"
 	"github.com/tomasen/realip"
 
 	"github.com/dusktreader/the-hunt/internal/data"
 	"github.com/dusktreader/the-hunt/internal/types"
 	"github.com/dusktreader/the-hunt/internal/validator"
 )
+
+func chainMiddleware(
+	router http.Handler,
+	middleware ...func(http.Handler) http.Handler,
+) http.Handler {
+	ret := router
+	for _, m := range slices.Backward(middleware) {
+		ret = m(ret)
+	}
+	return ret
+}
 
 func (app *application) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -180,4 +195,52 @@ func (app *application) requirePermissions(
 		next.ServeHTTP(w, r)
 	}
 	return app.requireAuthorization(fn)
+}
+
+func (app *application) enableCORS(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		slog.Debug("Dynamically adding CORS headers")
+
+		w.Header().Add("Vary", "Origin")
+		w.Header().Add("Vary", "Access-Control-Request-Method")
+
+		origin := r.Header.Get("Origin")
+		if origin != "" {
+			trusted := set.From(app.config.CORSTrustOrigins)
+			if trusted.Contains(origin) {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+
+				if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
+					w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, PUT, PATCH, DELETE")
+					w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+					w.WriteHeader(http.StatusOK)
+					return
+				}
+			}
+		}
+		w.Header().Set("Access-Control-Allow-Credentials", "true")
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) metrics(next http.Handler) http.Handler {
+	stats := types.RequestStats{}
+	expvar.Publish("request_stats", expvar.Func(func() any {
+		return stats
+	}))
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		slog.Debug("Adding request metrics")
+
+		start := time.Now()
+		stats.TotalRequests += 1
+
+		next.ServeHTTP(w, r)
+
+		stats.TotalResponses += 1
+
+		duration := time.Since(start).Microseconds()
+		stats.TotalProcTimeMu += duration
+	})
 }

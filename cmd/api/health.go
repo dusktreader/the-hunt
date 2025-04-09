@@ -11,7 +11,6 @@ type healthResponse struct {
 	Status		string				`json:"status"`
 	Environment	types.Environment	`json:"environment"`
 	Version		string				`json:"version"`
-	Config		*data.Config		`json:"config"`
 }
 
 
@@ -20,9 +19,6 @@ func (app *application) healthHandler(w http.ResponseWriter, r *http.Request) {
 		Status:			"available",
 		Environment: 	app.config.APIEnv,
 		Version:		version,
-	}
-	if hr.Environment.IsDev() {
-		hr.Config = &app.config
 	}
 
 	jr := &data.JSONResponse{

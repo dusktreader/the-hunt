@@ -6,6 +6,7 @@ services:
     environment:
       ADMIN_EMAIL: admin@the-hunt.dev
       ADMIN_PASSWORD: admin
+      CORS_TRUST_ORIGINS: "http://localhost:9000,http://localhost:9900"
     command: ["go", "run", "./cmd/api"]
     ports:
       - "4000:4000"
@@ -18,6 +19,8 @@ services:
         condition: service_started
     develop:
       watch:
+        - action: rebuild
+          path: ./docker-compose.yaml
         - action: sync+restart
           path: ./internal
           target: /app/internal
@@ -28,6 +31,36 @@ services:
           path: go.mod
         - action: rebuild
           path: go.sum
+
+  cors-simple:
+    build:
+      context: .
+      dockerfile: Dockerfile-dev
+    command: ["go", "run", "./simple"]
+    volumes:
+      - ./examples/cors/simple/:/app/simple/
+    ports:
+      - "9000:9000"
+    depends_on:
+      api:
+        condition: service_started
+    profiles:
+      - examples
+
+  cors-preflight:
+    build:
+      context: .
+      dockerfile: Dockerfile-dev
+    command: ["go", "run", "./preflight"]
+    volumes:
+      - ./examples/cors/preflight/:/app/preflight/
+    ports:
+      - "9900:9000"
+    depends_on:
+      api:
+        condition: service_started
+    profiles:
+      - examples
 
   db:
     image: postgres:17

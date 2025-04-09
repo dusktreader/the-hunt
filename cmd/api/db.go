@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	_ "github.com/lib/pq"
 	"github.com/dusktreader/the-hunt/internal/data"
+	_ "github.com/lib/pq"
 )
 
 func buildDSN(cfg data.Config) string {

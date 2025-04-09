@@ -44,4 +44,6 @@ type Config struct {
 
 	AdminEmail		types.Email		`env:"ADMIN_EMAIL"`
 	AdminPassword	types.PlainPW	`env:"ADMIN_PASSWORD" json:"-"`
+
+	CORSTrustOrigins	[]string	`env:"CORS_TRUST_ORIGINS"`
 }
