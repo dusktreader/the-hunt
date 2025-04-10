@@ -2,12 +2,11 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile-dev
+      dockerfile: Dockerfile.dev
     environment:
       ADMIN_EMAIL: admin@the-hunt.dev
       ADMIN_PASSWORD: admin
       CORS_TRUST_ORIGINS: "http://localhost:9000,http://localhost:9900"
-    command: ["make", "run"]
     ports:
       - "4000:4000"
     depends_on:
@@ -31,6 +30,24 @@ services:
           path: go.mod
         - action: rebuild
           path: go.sum
+
+  prod-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      API_ENV: production
+    ports:
+      - "4010:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+      maildev:
+        condition: service_started
+    profiles:
+      - prod-test
 
   cors-simple:
     build:

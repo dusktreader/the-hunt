@@ -1,0 +1,11 @@
+FROM golang:latest
+
+WORKDIR /app
+COPY go.mod go.sum Makefile .
+RUN go mod download
+
+COPY cmd /app/cmd
+COPY internal /app/internal
+COPY Makefile .
+
+CMD ["make", "app/run"]

@@ -5,24 +5,20 @@ import (
 )
 
 type metricsResponseWriter struct {
-	wrapped       http.ResponseWriter
+	http.ResponseWriter
 	statusCode    int
 	headerWritten bool
 }
 
 func newMetricsResponseWriter(w http.ResponseWriter) *metricsResponseWriter {
 	return &metricsResponseWriter{
-		wrapped:    w,
-		statusCode: http.StatusOK,
+		ResponseWriter:	w,
+		statusCode:		http.StatusOK,
 	}
 }
 
-func (mw *metricsResponseWriter) Header() http.Header {
-	return mw.wrapped.Header()
-}
-
 func (mw *metricsResponseWriter) WriteHeader(statusCode int) {
-	mw.wrapped.WriteHeader(statusCode)
+	mw.ResponseWriter.WriteHeader(statusCode)
 
 	if !mw.headerWritten {
 		mw.statusCode = statusCode
@@ -32,9 +28,9 @@ func (mw *metricsResponseWriter) WriteHeader(statusCode int) {
 
 func (mw *metricsResponseWriter) Write(b []byte) (int, error) {
 	mw.headerWritten = true
-	return mw.wrapped.Write(b)
+	return mw.ResponseWriter.Write(b)
 }
 
 func (mw *metricsResponseWriter) Unwrap() http.ResponseWriter {
-	return mw.wrapped
+	return mw.ResponseWriter
 }

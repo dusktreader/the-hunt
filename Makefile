@@ -98,6 +98,6 @@ app/run:  ## Run the API
 app/build: ldflags ?= '-s'
 app/build: GOOS_PART := $(if $(GOOS),.$(GOOS),)
 app/build: GOARCH_PART := $(if $(GOARCH),.$(GOARCH),)
-app/build: OUT_FILE :=./bin/the-hunt-api${GOOS_PART}
+app/build: OUT_FILE :=./bin/the-hunt-api${GOOS_PART}${GOARCH_PART}
 app/build:  ## Build the API executable
-	GOOS=${GOOS} GOARCH=${GOARCH} go build -ldflags=${ldflags} -o=${OUT_FILE} ./cmd/api
+	CGO_ENABLED=${CGO_ENABLED} GOOS=${GOOS} GOARCH=${GOARCH} go build -ldflags=${ldflags} -o=${OUT_FILE} ./cmd/api
